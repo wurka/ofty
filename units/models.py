@@ -4,6 +4,7 @@ from django.db import models
 # Create your models here.
 class Group(models.Model):
 	name = models.TextField(default="no name")
+	picture = models.TextField(default="group-picture.png")
 	parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE)
 
 

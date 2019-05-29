@@ -18,8 +18,9 @@ from django.contrib import admin
 from . import views
 
 urlpatterns = [
-	url(r'^admin/add-new-unit', views.add_new_unit),
-	url(r'^admin/get-groups', views.get_groups),
-	url(r'^admin/get-group-parameters', views.get_group_parameters),
-	url(r'^admin/get-my-units', views.get_my_units),
+	url(r'^add-new-unit', views.add_new_unit),
+	url(r'^get-groups', views.get_groups),
+	url(r'^get-group-parameters', views.get_group_parameters),
+	url(r'^get-my-units', views.get_my_units),
+	url(r'^ajax-test', views.ajax_test),
 ]
