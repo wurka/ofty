@@ -1,1 +1,4 @@
 /ofty/__pycache__/*.pyc
+/.idea
+/units/__pycache__
+/units/migrations
