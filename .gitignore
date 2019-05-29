@@ -2,3 +2,5 @@
 /.idea
 /units/__pycache__
 /units/migrations
+/shared/__pycache__
+/shared/migrations/__pycache__

@@ -1,5 +1,5 @@
 from django.shortcuts import HttpResponse, render
-from .models import Group
+from .models import Group, GroupParameter
 import json
 
 
@@ -18,7 +18,7 @@ def get_groups(request):
 		try:
 			parent = Group.objects.get(id=pid)
 		except Group.DoesNotExist:
-			return HttpResponse(f"there is no group with id {pid}")
+			return HttpResponse(f"there is no group with id {pid}", status=500)
 		groups = Group.objects.filter(parent=parent)
 	else:  # не указан родитель - отдать <root>
 		groups = Group.objects.filter(parent=None)
@@ -34,8 +34,30 @@ def get_groups(request):
 
 
 def get_group_parameters(request):
-	return HttpResponse("")
+	if "groupid" not in request.GET:
+		return HttpResponse("no groupid specified", status=500)
+	else:
+		try:
+			gid = int(request.GET["groupid"])
+			group = Group.objects.get(id=gid)
+			pars = GroupParameter.objects.filter(owner=group)
+			parameters = [{
+				"id": p.id,
+				"name": p.name,
+				"dimension": p.dimension
+			} for p in pars]
 
+			ans = {
+				"picture": "/static/img/group-picture/" + group.picture,
+				"parameters": json.dumps(parameters)
+			}
+			return HttpResponse(json.dumps(ans))
+		except ValueError:
+			return HttpResponse("wrong groupid value", status=500)
+		except Group.DoesNotExist:
+			return HttpResponse(f"there is no group with id {gid}", status=500)
+		except GroupParameter.DoesNotExist:
+			return HttpResponse("some extract error", status=500)
 
 def get_my_units(request):
 	return HttpResponse("")
