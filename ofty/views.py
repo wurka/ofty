@@ -2,6 +2,7 @@ from django.shortcuts import render
 from units.models import Group, Unit
 from django.contrib.auth.models import User
 
+
 def statistic(request):
 	params = {
 		"count_users": len(User.objects.all()),

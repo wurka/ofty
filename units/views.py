@@ -5,6 +5,76 @@ import json
 
 # Create your views here.
 def add_new_unit(request):
+	"""
+	Добавление нового товара
+	:param request:
+	:return: ОК - если добавлено. status = 500 и текст ошибки, если не удалось добавить
+	"""
+	Вес, кг: weight
+	Залог, руб: bail
+	Количество, шт: count
+	Коллекция: set - id
+	Название: title
+	Первый
+	день: first - day - cost
+	Аренда
+	от, дней: rent - min - days
+	Аренда
+	р / сут: day - cost
+	Тип
+	товара: unit - type
+	Массив
+	id
+	цветов: unit - colors
+	id
+	группы: goupid
+	список
+	параметров: [{"id": id1, "value": val1}, {"id": id2, "value": val2}]
+	must_be = [
+		"weight", "bail", "count", "title", "first-day-cost", "rent-min-days", "day-cost",
+	    "rent-min-days" , "day-cost", "unit-type", "unit-colors", "parameters"
+	]
+
+	for m in must_be:
+		if m not in request.POST:
+			return HttpResponse(f"There is no parameter {m} in POST request", status=500)
+
+	try:
+		param = "weight"
+		weight = float(request.POST[param])
+		param = "bail"
+		bail = float(request.POST[param])
+		param = "count"
+		count = int(request.POST[param])
+
+		param = "set"
+		setid = int(request.POST[param]) if param in request.POST else 0
+
+		param = "title"
+		title = request.POST[param]
+
+		param = "first-day-cost"
+		first_day_cost = float(request.POST[param])
+
+		param = "rent-min-days"
+		rent_min_days = float(request.POST[param])
+
+		param = "day-cost"
+		day_cost = float(request.POST[param])
+
+		param = "unit-type"
+		unit_type = int(request.POST[param])
+
+		param = "unit-colors"
+		unit_colors = json.loads(param)
+
+		param = "parameters"
+		unit_parameters = json.loads(param)
+
+
+	except ValueError:
+		return HttpResponse(f"Wrong value of parameter {param}")
+
 	return HttpResponse("OK")
 
 
@@ -58,6 +128,7 @@ def get_group_parameters(request):
 			return HttpResponse(f"there is no group with id {gid}", status=500)
 		except GroupParameter.DoesNotExist:
 			return HttpResponse("some extract error", status=500)
+
 
 def get_my_units(request):
 	return HttpResponse("")
