@@ -1,6 +1,7 @@
 from django.shortcuts import HttpResponse, render
-from .models import Group, GroupParameter
+from .models import Group, GroupParameter, Color, Unit, UnitColor
 import json
+import random, os
 
 
 # Create your views here.
@@ -10,30 +11,16 @@ def add_new_unit(request):
 	:param request:
 	:return: ОК - если добавлено. status = 500 и текст ошибки, если не удалось добавить
 	"""
-	Вес, кг: weight
-	Залог, руб: bail
-	Количество, шт: count
-	Коллекция: set - id
-	Название: title
-	Первый
-	день: first - day - cost
-	Аренда
-	от, дней: rent - min - days
-	Аренда
-	р / сут: day - cost
-	Тип
-	товара: unit - type
-	Массив
-	id
-	цветов: unit - colors
-	id
-	группы: goupid
-	список
-	параметров: [{"id": id1, "value": val1}, {"id": id2, "value": val2}]
 	must_be = [
 		"weight", "bail", "count", "title", "first-day-cost", "rent-min-days", "day-cost",
-	    "rent-min-days" , "day-cost", "unit-type", "unit-colors", "parameters"
+		"rent-min-days", "day-cost", "unit-group", "unit-colors", "parameters"
 	]
+	must_be_files = ["photo1", "photo2", "photo3", "photo4", "photo5"]
+
+	for mfile in must_be_files:
+		if mfile in request.FILES:
+			print(f"accepted file <{mfile}>")
+			# return HttpResponse("There is no photo1 - photo5 files", status=500)
 
 	for m in must_be:
 		if m not in request.POST:
@@ -62,20 +49,112 @@ def add_new_unit(request):
 		param = "day-cost"
 		day_cost = float(request.POST[param])
 
-		param = "unit-type"
-		unit_type = int(request.POST[param])
+		param = "unit-group"
+		unit_group = int(request.POST[param])
 
 		param = "unit-colors"
-		unit_colors = json.loads(param)
+		unit_colors = json.loads(request.POST[param])
 
 		param = "parameters"
-		unit_parameters = json.loads(param)
+		unit_parameters = json.loads(request.POST[param])
 
+		print("creating new unit...")
+
+		new_unit = Unit()
+		new_unit.weight = weight
+		new_unit.bail = bail
+		new_unit.count = count
+		new_unit.title = title
+		new_unit.first_day_cost = first_day_cost
+		new_unit.rent_min_days = rent_min_days
+		new_unit.day_cost = day_cost
+
+		# проверка на то, что группа, которую предлагает пользователь - существует
+		try:
+			new_unit_group = Group.objects.get(id=unit_group)
+		except Group.DoesNotExist:
+			return HttpResponse(f"Unknown unit group ({unit_group})", status=500)
+
+		# кроме того, добавлять можно ТОЛЬКО товары групп, которые не имеют потомков
+		childs = Group.objects.filter(parent=new_unit_group)
+		if len(childs) > 0:
+			return HttpResponse("This group cann't be used to save unit", status=500)
+
+		new_unit.group = new_unit_group
+		new_unit.save()  # без сохранения нельзя ссылаться
+		print(f"unit with id ({new_unit.id}) was sucessfully created")
+
+		# проверка и сохранение цветов
+		try:
+			for color_id in unit_colors:
+				color_check = Color.objects.get(id=color_id)
+				UnitColor.objects.create(color=color_check, unit=new_unit)
+		except Color.DoesNotExist:
+			return HttpResponse("Wrong color id", status=500)
+
+		# сохранение в файловый архив фотографий
+		# TODO: добавить полноценную проверку на тип фотографии (PILLOW)
+		folder = os.path.join("user_uploads", f"user_{0}", f"unit_{new_unit.id}")
+		os.makedirs(folder, exist_ok=True)
+
+		file_count = 0
+		for file_name in must_be_files:
+			if file_name in request.FILES:
+				uploading = request.FILES[file_name]
+				extension = uploading.name.split(".")[-1]
+				destination = os.path.join(folder, f"{file_name}.{extension}")
+				with open(destination, "wb+") as file2write:
+					for chunk in uploading.chunks():
+						file2write.write(chunk)
+				file_count += 1
+		if file_count == 0:
+			return HttpResponse("Must be at least one photo file", status=500)
 
 	except ValueError:
-		return HttpResponse(f"Wrong value of parameter {param}")
+		return HttpResponse(f"Wrong value of parameter {param}", status=500)
 
 	return HttpResponse("OK")
+
+
+def add_new_unit_test(request):
+	n = len(Group.objects.all())
+	random_group = None
+
+	if n > 0:
+		# подбирает группу, у которой нет детей (последняя в дереве)
+		rand_indx = random.randint(0, n-1)
+		steps = 0
+		while random_group is None and steps < n:
+			random_group = Group.objects.all()[(rand_indx + steps) % n]
+			bads = Group.objects.filter(parent=random_group)
+			if len(bads) > 0:
+				random_group = None
+			steps += 1
+
+		params = GroupParameter.objects.filter(owner=random_group) if random_group is not None else list()
+		json_params = {
+			param.name: f"{random.randint(0, 100500)}" for param in params
+		}
+		json_params = json.dumps(json_params)
+	else:
+		json_params = "[]"
+
+	random_colors = list()
+	for i in range(random.randint(1, 5)):
+		nc = len(Color.objects.all())
+		if nc > 0:
+			new_color = Color.objects.all()[random.randint(0, nc-1)]
+			if new_color not in random_colors:
+				random_colors.append(new_color)
+	json_colors = json.dumps(random_colors)
+
+	pars = {
+		"json_params": json_params,
+		"json_colors": json_colors,
+		"random_group": random_group
+	}
+
+	return render(request, "units/unit-new-unit-test.html", pars)
 
 
 def get_groups(request):
@@ -136,3 +215,5 @@ def get_my_units(request):
 
 def ajax_test(request):
 	return render(request, "units/ajax-test.html")
+
+

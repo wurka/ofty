@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Unit creation test</title>
+    <style>
+        input {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<form action="/units/add-new-unit" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="file" name="photo1" id="photo1_file">
+    <input type="file" name="photo2" id="photo2_file">
+    <input type="file" name="photo3" id="photo3_file">
+    <input type="file" name="photo4" id="photo4_file">
+    <input type="file" name="photo5" id="photo5_file">
+
+    <input type="text" name="weight" value="1">
+    <input type="text" name="bail" value="2">
+    <input type="text" name="count" value="3">
+    <input type="text" name="title" value="4">
+    <input type="text" name="first-day-cost" value="5">
+    <input type="text" name="rent-min-days" value="6">
+    <input type="text" name="day-cost" value="7">
+    <input type="text" name="rent-min-days" value="8">
+    <input type="text" name="day-cost" value="9">
+    <input type="text" name="unit-group" value="{{ random_group.id }}">
+    <input type="text" name="unit-colors" value="{{ json_colors }}">
+    <input type="text" name="parameters" value="{{ json_params }}">
+
+    <input type="submit" value="add new unit">
+</form>
+</body>
+</html>

@@ -34,6 +34,7 @@ INSTALLED_APPS = [
 	'units',
 	'shared',
 	'ofty',
+	'account',
 	'django.contrib.admin',
 	'django.contrib.auth',
 	'django.contrib.contenttypes',

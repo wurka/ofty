@@ -4,3 +4,6 @@
 /units/migrations
 /shared/__pycache__
 /shared/migrations/__pycache__
+/account/__pycache__/__init__.cpython-36.pyc
+/account/__pycache__/*.pyc
+/account/migrations/__pycache__/*.pyc

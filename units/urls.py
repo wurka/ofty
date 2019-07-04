@@ -18,9 +18,10 @@ from django.conf.urls import url, include
 from . import views
 
 urlpatterns = [
-	url(r'^add-new-unit', views.add_new_unit),
-	url(r'^get-groups', views.get_groups),
-	url(r'^get-group-parameters', views.get_group_parameters),
-	url(r'^get-my-units', views.get_my_units),
-	url(r'^ajax-test', views.ajax_test),
+	url(r'^add-new-unit$', views.add_new_unit),
+	url(r'^add-new-unit-test$', views.add_new_unit_test),
+	url(r'^get-groups$', views.get_groups),
+	url(r'^get-group-parameters$', views.get_group_parameters),
+	url(r'^get-my-units$', views.get_my_units),
+	url(r'^ajax-test$', views.ajax_test),
 ]
