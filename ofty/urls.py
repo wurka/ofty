@@ -21,5 +21,6 @@ urlpatterns = [
 	url(r'^admin/', admin.site.urls),
 	url(r'^units/', include('units.urls')),
 	url(r'^statistic/', views.statistic),
-	url(r'^account/', include('account.urls'))
+	url(r'^account/', include('account.urls')),
+	url(r'^shared/', include('shared.urls'))
 ]

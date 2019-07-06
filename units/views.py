@@ -6,11 +6,13 @@ import random, os
 
 # Create your views here.
 def add_new_unit(request):
+	#return HttpResponse('ttp')
 	"""
 	Добавление нового товара
 	:param request:
 	:return: ОК - если добавлено. status = 500 и текст ошибки, если не удалось добавить
 	"""
+	#return HttpResponse("ZHOPAA", status=501)
 	must_be = [
 		"weight", "bail", "count", "title", "first-day-cost", "rent-min-days", "day-cost",
 		"rent-min-days", "day-cost", "unit-group", "unit-colors", "parameters"
