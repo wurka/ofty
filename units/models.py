@@ -32,6 +32,7 @@ class Unit(models.Model):
 
 
 class UnitColor(models.Model):
+	x = models.FloatField()
 	unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
 	color = models.ForeignKey(Color, on_delete=models.CASCADE)
 

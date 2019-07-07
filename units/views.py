@@ -1,7 +1,9 @@
 from django.shortcuts import HttpResponse, render
 from .models import Group, GroupParameter, Color, Unit, UnitColor
 import json
-import random, os
+import random
+import os
+from django.http import JsonResponse
 
 
 # Create your views here.
@@ -199,7 +201,7 @@ def get_group_parameters(request):
 			} for p in pars]
 
 			ans = {
-				"picture": "/static/img/group-picture/" + group.picture,
+				"picture": request.build_absolute_uri("/static/img/grouppreview/" + group.picture),
 				"parameters": json.dumps(parameters)
 			}
 			return HttpResponse(json.dumps(ans))
@@ -212,7 +214,45 @@ def get_group_parameters(request):
 
 
 def get_my_units(request):
-	return HttpResponse("")
+	my_units = Unit.objects.all()
+	ans = list()
+	for unit in my_units:
+		appended_unit = {
+			'id': unit.id,
+			'weight': unit.weight,
+			'bail': unit.bail,
+			'count': unit.count,
+			'title': unit.title,
+			'first_day_coust': unit.first_day_cost,
+			'rent_min_days': unit.rent_min_days,
+			'day_cost': unit.day_cost,
+			'group': unit.group.id,
+		}
+		# цвета
+		aunit_colors = UnitColor.objects.filter(unit=unit)
+		appended_unit['colors'] = [
+			{
+				#'id': c.color.id,
+				#'color_group': c.color.color_group,
+				#'rgb_hex': c.color.rgb_hex,
+				#'texture': c.color.texture
+			} for c in aunit_colors]
+
+		# список фотографий (возможно, стоит сделать заполнение базы нормальное. это может быть быстрее, чем
+		# поиск по файловой системе наличия файла и решит проблемы со списком форматов)
+		for i in range(1, 6):
+			userid = 0  # !!!!! TODO: получать id активного пользователя
+			img_formats = ['jpg', 'jpeg', 'png']
+			for img_format in img_formats:
+				photo_path = os.path.join(
+					os.getcwd(), 'user_uploads', f'user_{userid}', f'unit_{unit.id}', f'photo{i}.{img_format}')
+				if os.path.exists(photo_path):
+					appended_unit[f'photo{i}'] = request.build_absolute_uri(
+						f'/static/user_{userid}/unit_{unit.id}/photo{i}.{img_format}')
+					break
+		ans.append(appended_unit)
+
+	return JsonResponse(ans, safe=False)
 
 
 def ajax_test(request):
