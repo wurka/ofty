@@ -7,7 +7,7 @@ from units.models import Group, GroupParameter
 print("THIS script will delete ALL data from database. Do it?")
 
 
-if input("for continue print y: ") == "y":
+if input("for continue print y: ").lower() == "y":
 	Group.objects.all().delete()
 
 	arki = Group.objects.create(name='Арки')

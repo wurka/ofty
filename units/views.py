@@ -10,7 +10,6 @@ from django.http import JsonResponse
 
 # Create your views here.
 def add_new_unit(request):
-	#return HttpResponse('ttp')
 	"""
 	Добавление нового товара
 	:param request:
@@ -164,7 +163,7 @@ def add_new_unit(request):
 			param = "sets"
 			raise ValueError()
 		for set_id in unit_sets:
-			base_set = Set.objects.get(id=set_id)
+			base_set = Set.objects.get(id=set_id, is_deleted=False)
 			new_unit_set = SetElement(
 				unit=new_unit,
 				set=base_set
@@ -299,7 +298,7 @@ def get_group_parameters(request):
 
 
 def get_my_units(request):
-	my_units = Unit.objects.all()
+	my_units = Unit.objects.filter(is_deleted=False)
 	ans = list()
 	for unit in my_units:
 		appended_unit = {
@@ -312,14 +311,16 @@ def get_my_units(request):
 			'rent_min_days': unit.rent_min_days,
 			'day_cost': unit.day_cost,
 			'group': unit.group.id,
+			'commentary': unit.description,
 		}
 		# параметры (соответствующие группе)
 		unit_parameters = UnitParameter.objects.filter(unit=unit)
 		appended_unit['parameters'] = [
 			{
-				'id': p.id,
+				'id': p.parameter.id,
 				'name': p.parameter.name,
 				'value': p.value,
+				'dimension': p.parameter.dimension
 			} for p in unit_parameters
 		]
 
@@ -327,7 +328,7 @@ def get_my_units(request):
 		unit_materials = UnitMaterial.objects.filter(unit=unit)
 		appended_unit['materials'] = [
 			{
-				'id': m.id,
+				'id': m.material.id,
 				'name': m.material.name
 			} for m in unit_materials
 		]
@@ -336,9 +337,18 @@ def get_my_units(request):
 		unit_sets = SetElement.objects.filter(unit=unit)
 		appended_unit['sets'] = [
 			{
-				'id': s.id,
+				'id': s.set.id,
 				'name': s.set.title
 			} for s in unit_sets if s not in appended_unit['sets']
+		]
+
+		# keywords (теги)
+		unit_keywords = UnitKeyword.objects.filter(unit=unit)
+		appended_unit['keywords'] = [
+			{
+				'id': k.keyword.id,
+				'word': k.keyword.name
+			} for k in unit_keywords
 		]
 
 		# цвета
@@ -372,3 +382,32 @@ def ajax_test(request):
 	return render(request, "units/ajax-test.html")
 
 
+def color_picker_source(request):
+	ans = dict()
+
+	for group in [f"group{i+1}" for i in range(5)]:
+		ans[group] = {
+			group: [{
+				'id': c.id,
+				'rgb_hex': c.rgb_hex,
+				'texture': request.build_absolute_uri("/static/img/units/texture/" + c.texture)
+			}] for c in Color.objects.filter(color_group=group)
+		}
+
+	return JsonResponse(ans)
+
+
+def delete_unit(request):
+	if 'id' not in request.POST:
+		return HttpResponse("There is no id in POST request", status=500)
+	try:
+		uid = int(request.POST['id'])
+		to_del_unit = Unit.objects.get(id=uid, is_deleted=False)
+		to_del_unit.is_deleted = True
+		to_del_unit.save()
+	except ValueError:
+		return HttpResponse("Wrong value of id parameter: {}".format(request.POST['id']), status=500)
+	except Unit.DoesNotExist:
+		return HttpResponse(f"There is no Unit with id {uid}", status=500)
+
+	return HttpResponse("OK")

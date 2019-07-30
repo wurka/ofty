@@ -2,6 +2,7 @@ from django.db import models
 from datetime import datetime
 import pytz
 
+
 # Create your models here.
 class Group(models.Model):
 	name = models.TextField(default="no name")
@@ -40,6 +41,7 @@ class Unit(models.Model):
 	day_cost = models.FloatField(default=0)  # цена дня аренды
 	group = models.ForeignKey(Group, on_delete=models.CASCADE)  # группа товара
 	description = models.TextField(default="no description")
+	is_deleted = models.BooleanField(default=False)  # True => Элемент удалён
 
 
 class UnitColor(models.Model):
@@ -75,6 +77,7 @@ class Set(models.Model):
 	"""
 	title = models.TextField(default="empty set title")
 	description = models.TextField(default="this set have no description")
+	is_deleted = models.BooleanField(default=False)
 
 
 class SetElement(models.Model):
