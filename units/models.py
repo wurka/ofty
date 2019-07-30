@@ -20,6 +20,15 @@ class Color(models.Model):
 	texture = models.TextField(default="blank.png")
 
 
+class Material(models.Model):
+	name = models.TextField(default="new material")
+
+
+class Keyword(models.Model):
+	name = models.TextField(default="empty key")
+	creation_time = models.DateTimeField()
+
+
 class Unit(models.Model):
 	weight = models.FloatField(default=0)  # кг, вес
 	bail = models.FloatField(default=0)  # рублей, залог
@@ -29,12 +38,22 @@ class Unit(models.Model):
 	rent_min_days = models.FloatField(default=0)  # минимальное количество дней аренды
 	day_cost = models.FloatField(default=0)  # цена дня аренды
 	group = models.ForeignKey(Group, on_delete=models.CASCADE)  # группа товара
+	description = models.TextField(default="no description")
 
 
 class UnitColor(models.Model):
-	x = models.FloatField()
 	unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
 	color = models.ForeignKey(Color, on_delete=models.CASCADE)
+
+
+class UnitMaterial(models.Model):
+	unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
+	material = models.ForeignKey(Material, on_delete=models.CASCADE)
+
+
+class UnitKeyword(models.Model):
+	unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
+	keyword = models.ForeignKey(Keyword, on_delete=models.CASCADE)
 
 
 class UnitPhoto(models.Model):
@@ -43,15 +62,24 @@ class UnitPhoto(models.Model):
 
 
 class UnitParameter(models.Model):
+	unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
 	parameter = models.ForeignKey(GroupParameter, on_delete=models.CASCADE)
 	value = models.TextField(default="x")
 
 
 class Set(models.Model):
+	"""
+	Коллекция товаров (набор "Всплески радости", например)
+	"""
 	title = models.TextField(default="empty set title")
 	description = models.TextField(default="this set have no description")
 
 
 class SetElement(models.Model):
+	"""
+	Один элемент из набора
+	"""
 	set = models.ForeignKey(Set, on_delete=models.CASCADE)
 	unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
+
+

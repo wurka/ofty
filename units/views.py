@@ -1,8 +1,10 @@
 from django.shortcuts import HttpResponse, render
-from .models import Group, GroupParameter, Color, Unit, UnitColor
+from .models import Group, GroupParameter, Color, Unit, UnitColor, UnitParameter
+from .models import Material, UnitMaterial, Set, SetElement, Keyword, UnitKeyword
 import json
 import random
 import os
+from datetime import datetime
 from django.http import JsonResponse
 
 
@@ -14,10 +16,10 @@ def add_new_unit(request):
 	:param request:
 	:return: ОК - если добавлено. status = 500 и текст ошибки, если не удалось добавить
 	"""
-	#return HttpResponse("ZHOPAA", status=501)
 	must_be = [
 		"weight", "bail", "count", "title", "first-day-cost", "rent-min-days", "day-cost",
-		"rent-min-days", "day-cost", "unit-group", "unit-colors", "parameters"
+		"unit-group", "unit-colors", "parameters",
+		"unit-materials", "sets", "keywords", "description"
 	]
 	must_be_files = ["photo1", "photo2", "photo3", "photo4", "photo5"]
 
@@ -62,6 +64,14 @@ def add_new_unit(request):
 		param = "parameters"
 		unit_parameters = json.loads(request.POST[param])
 
+		unit_materials = json.loads(request.POST["unit-materials"])
+
+		unit_sets = json.loads(request.POST["sets"])
+
+		unit_keywords = json.loads(request.POST["keywords"])
+
+		description = request.POST["description"]
+
 		print("creating new unit...")
 
 		new_unit = Unit()
@@ -72,6 +82,7 @@ def add_new_unit(request):
 		new_unit.first_day_cost = first_day_cost
 		new_unit.rent_min_days = rent_min_days
 		new_unit.day_cost = day_cost
+		new_unit.description = description
 
 		# проверка на то, что группа, которую предлагает пользователь - существует
 		try:
@@ -114,8 +125,75 @@ def add_new_unit(request):
 		if file_count == 0:
 			return HttpResponse("Must be at least one photo file", status=500)
 
+		new_unit.save()  # без сохранения невозможно сделать ссылку на него
+
+		# валидация и сохранения UnitParameters
+		if type(unit_parameters) is not dict:
+			param = "parameters"
+			raise ValueError()
+		base_params = GroupParameter.objects.filter(owner=new_unit.group)
+		for base_param in base_params:
+			new_unit_param = UnitParameter(
+				value=unit_parameters[base_param.id],  # вот она синхронизация ввода и базы
+				parameter=base_param,
+				unit=new_unit
+			)
+			new_unit_param.save()
+
+		# валидация и сохранения UnitMaterials
+		if type(unit_materials) is not list:
+			param = "unit-materials"
+			raise ValueError()
+		for material_id in unit_materials:
+			base_material = Material.objects.get(id=material_id)
+			new_unit_material = UnitMaterial(
+				unit=new_unit,
+				material=base_material
+			)
+			new_unit_material.save()
+
+		# валидация и сохранения Sets
+		if type(unit_sets) is not list:
+			param = "sets"
+			raise ValueError()
+		for set_id in unit_sets:
+			base_set = Set.objects.get(id=set_id)
+			new_unit_set = SetElement(
+				unit=new_unit,
+				set=base_set
+			)
+			new_unit_set.save()
+
+		# keywords
+		if type(unit_sets) is not list:
+			param = "sets"
+			raise ValueError()
+		for keyword in unit_keywords:
+			keyword = keyword.lower()
+			try:
+				base_keywrd = Keyword.objects.get(name=keyword)
+				new_unit_keyword = UnitKeyword(
+					unit=new_unit,
+					keyword=base_keywrd,
+					creation_time=datetime.now()
+				)
+				new_unit_keyword.save()
+			except Keyword.DoesNotExist:  # такого ключа ещё нет в базе
+				new_keyword = Keyword.objects.create(
+					name=keyword,
+					creation_time=datetime.now()
+				)
+				new_unit_keyword = UnitKeyword(
+					unit=new_unit,
+					keyword=new_keyword,
+					creation_time=datetime.now()
+				)
+				new_unit_keyword.save()
+
 	except ValueError:
 		return HttpResponse(f"Wrong value of parameter {param}", status=500)
+	except Material.DoesNotExist:
+		return HttpResponse("Seems like specified material does not exists", status=500)
 
 	return HttpResponse("OK")
 
