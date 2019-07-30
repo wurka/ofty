@@ -313,14 +313,42 @@ def get_my_units(request):
 			'day_cost': unit.day_cost,
 			'group': unit.group.id,
 		}
+		# параметры (соответствующие группе)
+		unit_parameters = UnitParameter.objects.filter(unit=unit)
+		appended_unit['parameters'] = [
+			{
+				'id': p.id,
+				'name': p.parameter.name,
+				'value': p.value,
+			} for p in unit_parameters
+		]
+
+		# материалы
+		unit_materials = UnitMaterial.objects.filter(unit=unit)
+		appended_unit['materials'] = [
+			{
+				'id': m.id,
+				'name': m.material.name
+			} for m in unit_materials
+		]
+
+		# наборы (sets)
+		unit_sets = SetElement.objects.filter(unit=unit)
+		appended_unit['sets'] = [
+			{
+				'id': s.id,
+				'name': s.set.title
+			} for s in unit_sets if s not in appended_unit['sets']
+		]
+
 		# цвета
 		aunit_colors = UnitColor.objects.filter(unit=unit)
 		appended_unit['colors'] = [
 			{
-				#'id': c.color.id,
-				#'color_group': c.color.color_group,
-				#'rgb_hex': c.color.rgb_hex,
-				#'texture': c.color.texture
+				'id': c.color.id,
+				'color_group': c.color.color_group,
+				'rgb_hex': c.color.rgb_hex,
+				'texture': c.color.texture
 			} for c in aunit_colors]
 
 		# список фотографий (возможно, стоит сделать заполнение базы нормальное. это может быть быстрее, чем
