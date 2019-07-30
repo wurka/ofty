@@ -64,13 +64,17 @@ def add_new_unit(request):
 		param = "parameters"
 		unit_parameters = json.loads(request.POST[param])
 
-		unit_materials = json.loads(request.POST["unit-materials"])
+		param = "unit-materials"
+		unit_materials = json.loads(request.POST[param])
 
-		unit_sets = json.loads(request.POST["sets"])
+		param = "sets"
+		unit_sets = json.loads(request.POST[param])
 
-		unit_keywords = json.loads(request.POST["keywords"])
+		param = "keywords"
+		unit_keywords = request.POST[param].split()
 
-		description = request.POST["description"]
+		param = "description"
+		description = request.POST[param]
 
 		print("creating new unit...")
 
@@ -133,8 +137,11 @@ def add_new_unit(request):
 			raise ValueError()
 		base_params = GroupParameter.objects.filter(owner=new_unit.group)
 		for base_param in base_params:
+			mykey = str(base_param.id)
+			if mykey not in unit_parameters:
+				return HttpResponse(f"There is no parameter with id {mykey} in unit_parameters", status=500)
 			new_unit_param = UnitParameter(
-				value=unit_parameters[base_param.id],  # вот она синхронизация ввода и базы
+				value=unit_parameters[mykey],  # вот она синхронизация ввода и базы
 				parameter=base_param,
 				unit=new_unit
 			)
@@ -301,7 +308,7 @@ def get_my_units(request):
 			'bail': unit.bail,
 			'count': unit.count,
 			'title': unit.title,
-			'first_day_coust': unit.first_day_cost,
+			'first_day_cost': unit.first_day_cost,
 			'rent_min_days': unit.rent_min_days,
 			'day_cost': unit.day_cost,
 			'group': unit.group.id,

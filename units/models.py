@@ -1,5 +1,6 @@
 from django.db import models
-
+from datetime import datetime
+import pytz
 
 # Create your models here.
 class Group(models.Model):
@@ -54,6 +55,7 @@ class UnitMaterial(models.Model):
 class UnitKeyword(models.Model):
 	unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
 	keyword = models.ForeignKey(Keyword, on_delete=models.CASCADE)
+	creation_time = models.DateTimeField(default=datetime(1970, 1, 1, tzinfo=pytz.UTC))
 
 
 class UnitPhoto(models.Model):
