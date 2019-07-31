@@ -10,3 +10,7 @@ def statistic(request):
 		"count_units": len(Unit.objects.all())
 	}
 	return render(request, "ofty/statistic.html", params)
+
+
+def index(request):
+	return render(request, "ofty/index.html")

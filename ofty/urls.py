@@ -23,4 +23,5 @@ urlpatterns = [
 	url(r'^statistic/', views.statistic),
 	url(r'^account/', include('account.urls')),
 	url(r'^shared/', include('shared.urls')),
+	url(r'^$', views.index)
 ]
