@@ -386,13 +386,13 @@ def color_picker_source(request):
 	ans = dict()
 
 	for group in [f"group{i+1}" for i in range(5)]:
-		ans[group] = {
-			group: [{
+		ans[group] = [
+			{
 				'id': c.id,
 				'rgb_hex': c.rgb_hex,
 				'texture': request.build_absolute_uri("/static/img/units/texture/" + c.texture)
-			}] for c in Color.objects.filter(color_group=group)
-		}
+			} for c in Color.objects.filter(color_group=group)
+		]
 
 	return JsonResponse(ans)
 
