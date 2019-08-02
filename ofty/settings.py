@@ -32,6 +32,7 @@ ALLOWED_HOSTS = ["127.0.0.1", "localhost", "zlaksa.ru"]
 
 INSTALLED_APPS = [
 	'units',
+	'message',
 	'shared',
 	'ofty',
 	'account',

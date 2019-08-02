@@ -298,7 +298,17 @@ def get_group_parameters(request):
 
 
 def get_my_units(request):
-	my_units = Unit.objects.filter(is_deleted=False)
+	if "offset" in request.GET and "size" in request.GET and "filter" in request.GET:
+		try:
+			offset = int(request.GET["offset"])
+			size = int(request.GET["size"])
+			# filter = request.GET["filter"]
+			my_units = Unit.objects.filter(is_deleted=False)[offset: offset+size]
+		except ValueError:
+			return HttpResponse("offset and size must be integers", status=500)
+	else:
+		my_units = Unit.objects.filter(is_deleted=False)
+
 	ans = list()
 	for unit in my_units:
 		appended_unit = {
