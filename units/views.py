@@ -397,6 +397,14 @@ def color_picker_source(request):
 	return JsonResponse(ans)
 
 
+def materials_source(request):
+	ans = [{
+		'id': x.id,
+		'name': x.name
+	} for x in Material.objects.all()]
+	return JsonResponse(ans, safe=False)
+
+
 def delete_unit(request):
 	if 'id' not in request.POST:
 		return HttpResponse("There is no id in POST request", status=500)

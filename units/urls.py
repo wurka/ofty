@@ -25,5 +25,6 @@ urlpatterns = [
 	url(r'^get-my-units$', views.get_my_units),
 	url(r'^ajax-test$', views.ajax_test),
 	url(r'^color-picker-source$', views.color_picker_source),
+	url(r'^materials-source$', views.materials_source),
 	url(r'^delete-unit$', views.delete_unit)
 ]

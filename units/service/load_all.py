@@ -5,3 +5,4 @@
 
 import units.service.load_groups
 import units.service.load_colors
+import units.service.load_materials

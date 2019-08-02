@@ -4,7 +4,7 @@
 
 from units.models import Color
 
-print("this script will delete and recreate ALL data about colors presets (Unit.Color). Continue? (y/n)?")
+print("LOAD COLORS: this script will delete and recreate ALL data about colors presets (Unit.Color). Continue? (y/n)?")
 
 if input("for continue print y: ").lower() == "y":
 	Color.objects.all().delete()

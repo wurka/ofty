@@ -4,7 +4,7 @@
 
 from units.models import Group, GroupParameter
 
-print("THIS script will delete ALL data from database. Do it?")
+print("LOAD GROUPS: THIS script will delete ALL data from database. Do it?")
 
 
 if input("for continue print y: ").lower() == "y":
