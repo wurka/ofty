@@ -1,6 +1,7 @@
 from django.db import models
 from datetime import datetime
 import pytz
+from django.urls import reverse
 
 
 # Create your models here.
@@ -42,6 +43,9 @@ class Unit(models.Model):
 	group = models.ForeignKey(Group, on_delete=models.CASCADE)  # группа товара
 	description = models.TextField(default="no description")
 	is_deleted = models.BooleanField(default=False)  # True => Элемент удалён
+
+	def get_absolute_url(self):
+		return reverse('units/unit', args=[str(self.id)])
 
 
 class UnitColor(models.Model):

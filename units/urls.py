@@ -14,17 +14,19 @@ Including another URLconf
 	2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
 from django.conf.urls import url, include
+from django.urls import path
 # from django.contrib import admin
 from . import views
 
 urlpatterns = [
-	url(r'^add-new-unit$', views.add_new_unit),
+	url(r'^add-new-unit$', views.add_new_unit, name='units/add-new-unit'),
 	url(r'^add-new-unit-test$', views.add_new_unit_test),
 	url(r'^get-groups$', views.get_groups),
 	url(r'^get-group-parameters$', views.get_group_parameters),
-	url(r'^get-my-units$', views.get_my_units),
+	path('get-my-units', views.get_my_units, name='get-my-units'),
 	url(r'^ajax-test$', views.ajax_test),
 	url(r'^color-picker-source$', views.color_picker_source),
 	url(r'^materials-source$', views.materials_source),
-	url(r'^delete-unit$', views.delete_unit)
+	url(r'^delete-unit$', views.delete_unit),
+	path('unit/<int:unit_id>', views.unit, name='units/unit')
 ]

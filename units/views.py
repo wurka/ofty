@@ -6,6 +6,7 @@ import random
 import os
 from datetime import datetime
 from django.http import JsonResponse
+from django.contrib.sitemaps import Sitemap
 
 
 # Create your views here.
@@ -310,21 +311,31 @@ def get_my_units(request):
 		my_units = Unit.objects.filter(is_deleted=False)
 
 	ans = list()
-	for unit in my_units:
+	ans.append({
+		'type': "header1",
+		'text': "Заголовок 1"
+	})
+	ans.append({
+		'type': "header2",
+		'text': "Заголовок 2"
+	})
+
+	for unit1 in my_units:
 		appended_unit = {
-			'id': unit.id,
-			'weight': unit.weight,
-			'bail': unit.bail,
-			'count': unit.count,
-			'title': unit.title,
-			'first_day_cost': unit.first_day_cost,
-			'rent_min_days': unit.rent_min_days,
-			'day_cost': unit.day_cost,
-			'group': unit.group.id,
-			'commentary': unit.description,
+			'type': 'unit',
+			'id': unit1.id,
+			'weight': unit1.weight,
+			'bail': unit1.bail,
+			'count': unit1.count,
+			'title': unit1.title,
+			'first_day_cost': unit1.first_day_cost,
+			'rent_min_days': unit1.rent_min_days,
+			'day_cost': unit1.day_cost,
+			'group': unit1.group.id,
+			'commentary': unit1.description,
 		}
 		# параметры (соответствующие группе)
-		unit_parameters = UnitParameter.objects.filter(unit=unit)
+		unit_parameters = UnitParameter.objects.filter(unit=unit1)
 		appended_unit['parameters'] = [
 			{
 				'id': p.parameter.id,
@@ -335,7 +346,7 @@ def get_my_units(request):
 		]
 
 		# материалы
-		unit_materials = UnitMaterial.objects.filter(unit=unit)
+		unit_materials = UnitMaterial.objects.filter(unit=unit1)
 		appended_unit['materials'] = [
 			{
 				'id': m.material.id,
@@ -344,7 +355,7 @@ def get_my_units(request):
 		]
 
 		# наборы (sets)
-		unit_sets = SetElement.objects.filter(unit=unit)
+		unit_sets = SetElement.objects.filter(unit=unit1)
 		appended_unit['sets'] = [
 			{
 				'id': s.set.id,
@@ -353,7 +364,7 @@ def get_my_units(request):
 		]
 
 		# keywords (теги)
-		unit_keywords = UnitKeyword.objects.filter(unit=unit)
+		unit_keywords = UnitKeyword.objects.filter(unit=unit1)
 		appended_unit['keywords'] = [
 			{
 				'id': k.keyword.id,
@@ -362,7 +373,7 @@ def get_my_units(request):
 		]
 
 		# цвета
-		aunit_colors = UnitColor.objects.filter(unit=unit)
+		aunit_colors = UnitColor.objects.filter(unit=unit1)
 		appended_unit['colors'] = [
 			{
 				'id': c.color.id,
@@ -378,10 +389,10 @@ def get_my_units(request):
 			img_formats = ['jpg', 'jpeg', 'png']
 			for img_format in img_formats:
 				photo_path = os.path.join(
-					os.getcwd(), 'user_uploads', f'user_{userid}', f'unit_{unit.id}', f'photo{i}.{img_format}')
+					os.getcwd(), 'user_uploads', f'user_{userid}', f'unit_{unit1.id}', f'photo{i}.{img_format}')
 				if os.path.exists(photo_path):
 					appended_unit[f'photo{i}'] = request.build_absolute_uri(
-						f'/static/user_{userid}/unit_{unit.id}/photo{i}.{img_format}')
+						f'/static/user_{userid}/unit_{unit1.id}/photo{i}.{img_format}')
 					break
 		ans.append(appended_unit)
 
@@ -429,3 +440,16 @@ def delete_unit(request):
 		return HttpResponse(f"There is no Unit with id {uid}", status=500)
 
 	return HttpResponse("OK")
+
+
+class TestMap(Sitemap):
+	def items(self):
+		return {'a': 'b'}
+
+
+def get_sitemap(request):
+	return Sitemap(request, {'test': TestMap})
+
+
+def unit(request, unit_id):
+	return HttpResponse(f"<div>there is unit with id: {unit_id}</div>")

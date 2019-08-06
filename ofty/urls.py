@@ -14,8 +14,11 @@ Including another URLconf
 	2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
 from django.conf.urls import url, include
+from django.urls import path
 from django.contrib import admin
+from django.contrib.sitemaps.views import sitemap
 from . import views
+from . import sitemaps
 
 urlpatterns = [
 	url(r'^admin/', admin.site.urls),
@@ -24,5 +27,8 @@ urlpatterns = [
 	url(r'^statistic/', views.statistic),
 	url(r'^account/', include('account.urls')),
 	url(r'^shared/', include('shared.urls')),
-	url(r'^$', views.index)
+	url(r'^$', views.index, name='index'),
+	path(
+		'sitemap.xml', sitemap, {'sitemaps': sitemaps.ofty_maps},
+		name='django.contrib.sitemaps.views.sitemaps')
 ]

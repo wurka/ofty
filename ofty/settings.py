@@ -36,6 +36,7 @@ INSTALLED_APPS = [
 	'shared',
 	'ofty',
 	'account',
+	'django.contrib.sitemaps',
 	'django.contrib.admin',
 	'django.contrib.auth',
 	'django.contrib.contenttypes',
