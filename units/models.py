@@ -43,9 +43,21 @@ class Unit(models.Model):
 	group = models.ForeignKey(Group, on_delete=models.CASCADE)  # группа товара
 	description = models.TextField(default="no description")
 	is_deleted = models.BooleanField(default=False)  # True => Элемент удалён
+	search_string = models.TextField(default="")  # строка для поиска по ней
 
 	def get_absolute_url(self):
 		return reverse('units/unit', args=[str(self.id)])
+
+	def build_search_string(self):
+		parent = self.group.parent if self.group is not None else None
+		group_text = self.group.name if self.group is not None else ""
+		while parent is not None:
+			group_text = parent.name + " " + group_text
+			parent = parent.parent
+
+		# строка приводится в нижний регистр, т.к. емучий UTF8 в SQL через жопу LIKE делал
+		self.search_string = f"{group_text} {self.description}".lower()
+		self.save()
 
 
 class UnitColor(models.Model):

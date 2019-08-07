@@ -1,14 +1,20 @@
 from django.http import HttpResponse
+from django.shortcuts import render
 import re
 import json
 from django.contrib.auth.models import User
 from .models import Conversation, ConversationMember
+from django.http import JsonResponse
 
 # Create your views here.
 
 
 def test(request):
 	return HttpResponse("OK")
+
+
+def demo(request):
+	return render(request, 'message/demo.html')
 
 
 def create_conversation(request):
@@ -66,3 +72,15 @@ def create_conversation(request):
 
 def add_member_to_conversation(request):
 	return HttpResponse("OK")
+
+
+def get_my_conversations(request):
+	# взять Юзера
+	me = ConversationMember.objects.all()
+	ans = list()
+	for m in me:
+		ans.append({
+			"id": m.conversation.id,
+			"title": m.conversation.title
+		})
+	return JsonResponse(ans, safe=False)

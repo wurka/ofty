@@ -7,6 +7,7 @@ import os
 from datetime import datetime
 from django.http import JsonResponse
 from django.contrib.sitemaps import Sitemap
+from django.db.models import Q
 
 
 # Create your views here.
@@ -197,6 +198,8 @@ def add_new_unit(request):
 				)
 				new_unit_keyword.save()
 
+		new_unit.build_search_string()  # сгенерировать строку для поиска
+
 	except ValueError:
 		return HttpResponse(f"Wrong value of parameter {param}", status=500)
 	except Material.DoesNotExist:
@@ -303,8 +306,9 @@ def get_my_units(request):
 		try:
 			offset = int(request.GET["offset"])
 			size = int(request.GET["size"])
-			# filter = request.GET["filter"]
-			my_units = Unit.objects.filter(is_deleted=False)[offset: offset+size]
+			filt = request.GET["filter"].lower()
+			my_units = Unit.objects.filter(is_deleted=False).filter(search_string__icontains=filt)
+			my_units = my_units[offset: offset + size]
 		except ValueError:
 			return HttpResponse("offset and size must be integers", status=500)
 	else:

@@ -27,3 +27,11 @@ def login_info(request):
 		return HttpResponse("You not loggined in. Go for /account/login with your user, password pair")
 	else:
 		return HttpResponse(f"You loggined as {request.user.username} ({request.user.id})")
+
+
+def demo(request):
+	params = {
+		'user_name': request.user.username if not request.user.is_anonymous else "Anonymous",
+		"user_id": request.user.id if not request.user.is_anonymous else "X"
+	}
+	return render(request, 'account/demo.html', params)

@@ -1,0 +1,43 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>MSG: demo</title>
+    <style>
+        .button{
+            background: white;
+            cursor: pointer;
+        }
+        .button:hover{
+            text-decoration: underline;
+        }
+        .selected{
+            font-weight: bold;
+        }
+    </style>
+    <script src="{% static 'js/shared/jquery-3.4.1.min.js' %}"></script>
+    <script>
+        function loadConversations() {
+            $.ajax({
+                url: "/message/get-my-conversations",
+                success: (data)=>{$("#output").html(data)},
+                error: (data)=>{console.error(data.responseText)}
+            })
+        }
+    </script>
+</head>
+<body>
+    <div class="layout" style="display: flex; width: 800px; margin: auto;">
+        <div style="width: 300px; border: 1px solid gray; border-width: 0 1px 0 0">
+            <div class="button" onclick="loadConversations()">
+                Список бесед
+            </div>
+            <div class="button">
+                Беседа с id <input type="text" name="conversid" style="width: 30px">
+            </div>
+        </div>
+        <div id="output"></div>
+    </div>
+</body>
+</html>

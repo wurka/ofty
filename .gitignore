@@ -11,3 +11,5 @@
 /user_uploads/user_0/unit_11
 /units/service/__pycache__
 /message/__pycache__/*.pyc
+/message/migrations/__pycache__/*.pyc
+/message/migrations
