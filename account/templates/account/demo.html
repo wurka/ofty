@@ -17,6 +17,7 @@
         }
     </style>
     <script src="{% static 'js/shared/jquery-3.4.1.min.js' %}"></script>
+    <script src="{% static 'js/shared/vue.js' %}"></script>
     <script>
         function loadConversations() {
             $.ajax({
@@ -29,16 +30,146 @@
 </head>
 <body>
     <div>you loggined as {{  user_name }} ({{ user_id }})</div>
-    <div class="layout" style="display: flex; width: 800px; margin: auto;">
+    <div class="layout" id="app" style="display: flex; width: 800px; margin: auto;">
         <div style="width: 300px; border: 1px solid gray; border-width: 0 1px 0 0">
-            <div class="button" onclick="loadConversations()">
+            <div class="button" onclick="loadConversations()" v-bind:class="{selected: activePanel=='register'}" @click="setActive('register')">
                 Зарегистрироваться
             </div>
-            <div class="button">
+            <div class="button" v-bind:class="{selected: activePanel=='avatar'}" @click="setActive('avatar')">
                 Изменить аватар
             </div>
+            <div class="button"
+                v-bind:class="{selected: activePanel=='password'}"
+                @click="setActive('password')">
+                Изменить пароль
+            </div>
+            <div class="button" v-bind:class="{selected: activePanel=='rent'}" @click="setActive('rent')">
+                Условия аренды
+            </div>
+            <div class="button" v-bind:class="{selected: activePanel=='time'}" @click="setActive('time')">
+                Время работы
+            </div>
+            <div class="button" v-bind:class="{selected: activePanel=='alerts'}" @click="setActive('alerts')">
+                Оповещения
+            </div>
+            <div class="button" v-bind:class="{selected: activePanel=='blacklist'}" @click="setActive('blacklist')">
+                Черный список
+            </div>
         </div>
-        <div id="output"></div>
+        <div id="right-panel">
+            <div v-if="activePanel=='avatar'">
+                <form action="/account/change-avatar" @submit="avatarSave">
+                    <input type="file" name="avatar" id="avatar">
+                    <input type="submit" value="save">
+                </form>
+            </div>
+            <div v-if="activePanel=='password'">
+                <form action="/account/change-password">
+                    <div>
+                        <label for="newPasswd">new password:</label><input type="password" name="password">
+                        <input type="submit" value="change">
+                    </div>
+                </form>
+            </div>
+            <div v-if="activePanel=='rent'">
+                <div>
+                    <form action="/account/change-rent-conditions" @submit="rentSave">
+                        <label for="uslovia" style="vertical-align: top">Условия аренды (JSON)</label>
+                        <textarea name="delivery_case" id="" cols="30" rows="10">[{'name': 'самовывоз', 'value': '300'}, {'name': 'доставка по москве', 'value': '300'}]</textarea>
+                        <div>
+                            <label for="sklad">Адрес склада</label>
+                            <input type="text" id="sklad">
+                        </div>
+                        <div>
+                            <label for="metro">Ближайшее метро</label>
+                            <input type="text" id="metro">
+                        </div>
+                        <div>
+                            <label for="comment">Комментарий</label>
+                            <input type="text" id="comment">
+                        </div>
+                        <div><input type="submit" value="save"></div>
+                    </form>
+                </div>
+            </div>
+            <div v-if="activePanel=='time'">
+                <input type="checkbox" id="mondaye"> <label for="mondaye">Понедельник</label>
+                <label for="mondayfrom"></label><input type="text" id="mondayfrom" value="00:01">
+                <label for="mondayto"></label><input type="text" id="mondayto" value="23:50">
+            </div>
+            <div id="output">[[ output ]]</div>
+        </div>
     </div>
+    <script>
+        let app = new Vue({
+            el: '#app',
+            data: {
+                activePanel: 'rent',
+                output: '...'
+            },
+            methods: {
+                printout: function(text){
+                    $("#output").html((new Date()).toString() + "<br>" + text);
+                },
+                setActive: function (what) {
+                    this.activePanel = what;
+                },
+                avatarSave: function (e) {
+                    e.preventDefault();
+                    console.log("nu ok...");
+                },
+                passwordSave: function (e) {
+                    e.preventDefault();
+                    $.ajax({
+                        url: '/account/password-set',
+                        data: {
+                            'password': $('input[name=password]').val()
+                        },
+                        success: (data)=>{
+                            app.printout(data);
+                        },
+                        error: (data)=>{
+                            app.printout(data.responseText);
+                        }
+                    })
+                },
+                rentSave: function (e) {
+                    e.preventDefault();
+
+                    let cases = $("textarea[name=delivery_case]").val(),
+                        sklad = $("input[id=sklad]").val(),
+                        metro = $("input[id=metro]").val(),
+                        comment = $("input[id=comment]").val();
+
+                    $.ajax({
+                       url: "/account/delivery-set",
+                       data: {
+                           'cases': cases,
+                           'sklad': sklad,
+                           'metro': metro,
+                           'commentary': comment
+                       },
+                        success: (data)=>{
+                           app.printout(data);
+                        },
+                        error: (data)=>{
+                           app.printout(data.responseText);
+                        }
+                    });
+                },
+                timeSave: function (e) {
+                    e.preventDefault();
+
+                    let days = {
+                        "monday": {
+                            "time": $("input[name=wtmonday]").val()
+
+                        }
+                    }
+                }
+            },
+            delimiters: ['[[', ']]']
+        })
+    </script>
 </body>
 </html>

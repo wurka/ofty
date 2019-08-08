@@ -35,3 +35,12 @@ def demo(request):
 		"user_id": request.user.id if not request.user.is_anonymous else "X"
 	}
 	return render(request, 'account/demo.html', params)
+
+
+def password_set(request):
+	return HttpResponse("password set")
+
+
+def delivery_set(request):
+	return HttpResponse("delivery set")
+
