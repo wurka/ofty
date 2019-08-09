@@ -1,5 +1,7 @@
 from django.shortcuts import render, HttpResponse
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
+from account.models import OftyUser
 
 
 # Create your views here.
@@ -44,3 +46,20 @@ def password_set(request):
 def delivery_set(request):
 	return HttpResponse("delivery set")
 
+
+def time_set(request):
+	return HttpResponse("time set not implemented")
+
+
+def new_account(request):
+	must = ["login", "password"]
+	for m in must:
+		if m not in request.POST:
+			return HttpResponse(f"There is no parameter {m}", status=500)
+	try:
+		User.objects.get(username=request.POST['login'])
+		return HttpResponse("login already exists", status=500)
+	except User.DoesNotExist:
+		new_user = User.objects.create_user(request.POST["login"], password=request.POST['password'])
+		OftyUser.objects.create(user=new_user)
+		return HttpResponse("OK")

@@ -31,6 +31,7 @@
 <body>
     <div>you loggined as {{  user_name }} ({{ user_id }})</div>
     <div class="layout" id="app" style="display: flex; width: 800px; margin: auto;">
+        {% csrf_token %}
         <div style="width: 300px; border: 1px solid gray; border-width: 0 1px 0 0">
             <div class="button" onclick="loadConversations()" v-bind:class="{selected: activePanel=='register'}" @click="setActive('register')">
                 Зарегистрироваться
@@ -57,14 +58,25 @@
             </div>
         </div>
         <div id="right-panel">
+            <div v-if="activePanel=='register'">
+                <form action="/account/new_account" @submit="register" autocomplete="off">
+                    <div>
+                        <label for="login">login</label><input type="text" id="login">
+                    </div>
+                    <div>
+                        <label for="password">password</label><input type="password" id="password">
+                    </div>
+                    <input type="submit" value="create">
+                </form>
+            </div>
             <div v-if="activePanel=='avatar'">
-                <form action="/account/change-avatar" @submit="avatarSave">
+                <form action="/account/change-avatar" @submit="avatarSave" autocomplete="off">
                     <input type="file" name="avatar" id="avatar">
                     <input type="submit" value="save">
                 </form>
             </div>
             <div v-if="activePanel=='password'">
-                <form action="/account/change-password">
+                <form action="/account/change-password" autocomplete="off">
                     <div>
                         <label for="newPasswd">new password:</label><input type="password" name="password">
                         <input type="submit" value="change">
@@ -73,7 +85,7 @@
             </div>
             <div v-if="activePanel=='rent'">
                 <div>
-                    <form action="/account/change-rent-conditions" @submit="rentSave">
+                    <form action="/account/change-rent-conditions" @submit="rentSave" autocomplete="off">
                         <label for="uslovia" style="vertical-align: top">Условия аренды (JSON)</label>
                         <textarea name="delivery_case" id="" cols="30" rows="10">[{'name': 'самовывоз', 'value': '300'}, {'name': 'доставка по москве', 'value': '300'}]</textarea>
                         <div>
@@ -93,9 +105,29 @@
                 </div>
             </div>
             <div v-if="activePanel=='time'">
-                <input type="checkbox" id="mondaye"> <label for="mondaye">Понедельник</label>
-                <label for="mondayfrom"></label><input type="text" id="mondayfrom" value="00:01">
-                <label for="mondayto"></label><input type="text" id="mondayto" value="23:50">
+                <form action="/account/time-set" @submit="timeSave" autocomplete="off">
+                    <div v-for="(x, indx) in 7">
+                        <input type="checkbox" :id="[['day-' + x]]"> <label :for="[['day-' + x]]">
+                            [[ ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскрсенье'][indx] ]]
+                        </label>
+                        <label :for="'day-from-'+x"></label><input type="text" :id="'day-from-'+x" value="00:01">
+                        <label :for="'day-to-'+x"></label><input type="text" :id="'day-to-'+x" value="23:50">
+                    </div>
+                    <input type="submit" value="save">
+                </form>
+            </div>
+            <div v-if="activePanel=='alerts'">
+                <form action="/account/alerts-set" @submit="alertsSave" autocomplete="off">
+                    <div v-for="(item, indx) in ['push', 'sound', 'smsnew', 'smsbeginend', 'mailnew', 'mailbeginend']">
+                        <input type="checkbox" :id="[['enable-' + item]]">
+                        <label :for="[['enable-' + item]]">
+                            [[ ['Показать мгновенные уведомления', 'Включить звуковое оповещение', 'Присылать смс о новом заказе',
+                            'Присылать смс об окончании и начале срока аренды', 'Присылать сообщения о новом заказе на эл. почту',
+                            'Присылать сообщения об окончании и начале срока аренды на эл. почту'][indx] ]]
+                        </label>
+                    </div>
+                    <input type="submit" value="save">
+                </form>
             </div>
             <div id="output">[[ output ]]</div>
         </div>
@@ -104,12 +136,28 @@
         let app = new Vue({
             el: '#app',
             data: {
-                activePanel: 'rent',
+                activePanel: 'alerts',
                 output: '...'
             },
             methods: {
                 printout: function(text){
                     $("#output").html((new Date()).toString() + "<br>" + text);
+                },
+                register: function(e){
+                    e.preventDefault();
+                    let login=$("#login").val(),
+                        password=$("#password").val();
+                    $.ajax({
+                        url: "/account/new-account",
+                        method: 'POST',
+                        data: {
+                            'login': login,
+                            'password': password,
+                            'csrfmiddlewaretoken': $("input[name=csrfmiddlewaretoken]").val()
+                        },
+                        success: (data)=>{app.printout(data);},
+                        error: (data)=>{app.printout(data.responseText)}
+                    })
                 },
                 setActive: function (what) {
                     this.activePanel = what;
@@ -161,11 +209,56 @@
                     e.preventDefault();
 
                     let days = {
-                        "monday": {
-                            "time": $("input[name=wtmonday]").val()
-
+                        "mon": {
+                            "time-from": $("input[id=day-from-1]").val(),
+                            "time-to": $("input[id=day-to-1]").val(),
+                            "enable": $("input[id=day-1]").prop('checked')
+                        },
+                        "tue": {
+                            "time-from": $("input[id=day-from-2]").val(),
+                            "time-to": $("input[id=day-to-2]").val(),
+                            "enable": $("input[id=day-2]").prop('checked')
+                        },
+                        "wed": {
+                            "time-from": $("input[id=day-from-3]").val(),
+                            "time-to": $("input[id=day-to-3]").val(),
+                            "enable": $("input[id=day-3]").prop('checked')
+                        },
+                        "thu": {
+                            "time-from": $("input[id=day-from-4]").val(),
+                            "time-to": $("input[id=day-to-4]").val(),
+                            "enable": $("input[id=day-4]").prop('checked')
+                        },
+                        "fri": {
+                            "time-from": $("input[id=day-from-5]").val(),
+                            "time-to": $("input[id=day-to-5]").val(),
+                            "enable": $("input[id=day-5]").prop('checked')
+                        },
+                        "sat": {
+                            "time-from": $("input[id=day-from-6]").val(),
+                            "time-to": $("input[id=day-to-6]").val(),
+                            "enable": $("input[id=day-6]").prop('checked')
+                        },
+                        "sun": {
+                            "time-from": $("input[id=day-from-7]").val(),
+                            "time-to": $("input[id=day-to-7]").val(),
+                            "enable": $("input[id=day-7]").prop('checked')
                         }
-                    }
+                    };
+
+                    $.ajax({
+                        url: '/account/time-set',
+                        success: (data)=>{
+                            app.printout(data);
+                        },
+                        error: (data)=>{
+                            app.printout(data.responseText);
+                        }
+                    })
+                },
+                alertsSave: function (e) {
+                    e.preventDefault();
+                    console.log(1);
                 }
             },
             delimiters: ['[[', ']]']
