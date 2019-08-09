@@ -3,7 +3,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>MSG: demo</title>
+    <title>account: demo</title>
+    <link rel="icon" href="{% static 'img/shared/favicon.ico' %}">
     <style>
         .button{
             background: white;
@@ -36,6 +37,9 @@
             <div class="button" onclick="loadConversations()" v-bind:class="{selected: activePanel=='register'}" @click="setActive('register')">
                 Зарегистрироваться
             </div>
+            <div class="button" v-bind:class="{selected: activePanel=='loginout'}" @click="setActive('loginout')">
+                Войти/выйти
+            </div>
             <div class="button" v-bind:class="{selected: activePanel=='avatar'}" @click="setActive('avatar')">
                 Изменить аватар
             </div>
@@ -67,6 +71,20 @@
                         <label for="password">password</label><input type="password" id="password">
                     </div>
                     <input type="submit" value="create">
+                </form>
+            </div>
+            <div v-if="activePanel=='loginout'">
+                <form action="/account/login" @submit="login" autocomplete="off">
+                    <div>
+                        <label for="loginout-login">login</label><input type="text" id="loginout-login">
+                    </div>
+                    <div>
+                        <label for="loginout-password">password</label><input type="password" id="loginout-password">
+                    </div>
+                    <input type="submit" value="Зайти на сайт">
+                </form>
+                <form action="/account/logout" @submit="logout" autocomplete="off">
+                    <input type="submit" value="Покинуть сайт">
                 </form>
             </div>
             <div v-if="activePanel=='avatar'">
@@ -136,7 +154,7 @@
         let app = new Vue({
             el: '#app',
             data: {
-                activePanel: 'alerts',
+                activePanel: 'loginout',
                 output: '...'
             },
             methods: {
@@ -259,6 +277,32 @@
                 alertsSave: function (e) {
                     e.preventDefault();
                     console.log(1);
+                },
+                login: function (e) {
+                    e.preventDefault();
+                    $.ajax({
+                        url: "/account/login",
+                        method: 'POST',
+                        data: {
+                            'user': $("#loginout-login").val(),
+                            'password': $("#loginout-password").val(),
+                            'csrfmiddlewaretoken': $("input[name=csrfmiddlewaretoken]").val()
+                        },
+                        success: (data)=>{app.printout(data);},
+                        error: (data)=>{app.printout(data.responseText);}
+                    })
+                },
+                logout: function (e) {
+                    e.preventDefault();
+                    $.ajax({
+                        url: "/account/logout",
+                        method: "POST",
+                        data: {
+                            'csrfmiddlewaretoken': $("input[name=csrfmiddlewaretoken]").val()
+                        },
+                        success: (data)=>{app.printout(data)},
+                        error: (data)=>{app.printout(data.responseText)}
+                    })
                 }
             },
             delimiters: ['[[', ']]']
