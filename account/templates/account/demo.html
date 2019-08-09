@@ -94,18 +94,21 @@
                 </form>
             </div>
             <div v-if="activePanel=='password'">
-                <form action="/account/change-password" autocomplete="off">
+                <form action="/account/password-set" autocomplete="off" @submit="passwordSave">
                     <div>
-                        <label for="newPasswd">new password:</label><input type="password" name="password">
-                        <input type="submit" value="change">
+                        <label for="newPasswd">new password:</label><input type="password" name="password-value">
+                        <input type="submit" value="change now">
                     </div>
                 </form>
             </div>
             <div v-if="activePanel=='rent'">
                 <div>
+                    <form action="/account/delivery-get">
+                        <input type="button" @click="rentGet" value="Узнать текущие условия аренды">
+                    </form>
                     <form action="/account/change-rent-conditions" @submit="rentSave" autocomplete="off">
                         <label for="uslovia" style="vertical-align: top">Условия аренды (JSON)</label>
-                        <textarea name="delivery_case" id="" cols="30" rows="10">[{'name': 'самовывоз', 'value': '300'}, {'name': 'доставка по москве', 'value': '300'}]</textarea>
+                        <textarea name="delivery_case" id="" cols="30" rows="10">[{"name": "самовывоз", "value": "300"}, {"name": "доставка по москве", "value": "300"}]</textarea>
                         <div>
                             <label for="sklad">Адрес склада</label>
                             <input type="text" id="sklad">
@@ -154,7 +157,7 @@
         let app = new Vue({
             el: '#app',
             data: {
-                activePanel: 'loginout',
+                activePanel: 'rent',
                 output: '...'
             },
             methods: {
@@ -188,8 +191,10 @@
                     e.preventDefault();
                     $.ajax({
                         url: '/account/password-set',
+                        method: 'POST',
                         data: {
-                            'password': $('input[name=password]').val()
+                            'password': $('input[name=password-value]').val(),
+                            'csrfmiddlewaretoken': $("input[name=csrfmiddlewaretoken]").val()
                         },
                         success: (data)=>{
                             app.printout(data);
@@ -199,22 +204,35 @@
                         }
                     })
                 },
+                rentGet: function() {
+                    $.ajax({
+                        url: "/account/delivery-get",
+                        success: (data)=>{
+                            let ans = JSON.stringify(data),
+                                forHuman = JSON.stringify(JSON.parse(data.cases))
+                            app.printout(ans + "<hr>" + forHuman);
+                            },
+                        error: (data)=>{app.printout(data.responseText);}
+                    })
+                },
                 rentSave: function (e) {
                     e.preventDefault();
 
-                    let cases = $("textarea[name=delivery_case]").val(),
+                    let cases = JSON.parse($("textarea[name=delivery_case]").val()),
                         sklad = $("input[id=sklad]").val(),
                         metro = $("input[id=metro]").val(),
                         comment = $("input[id=comment]").val();
 
                     $.ajax({
-                       url: "/account/delivery-set",
-                       data: {
-                           'cases': cases,
+                        url: "/account/delivery-set",
+                        method: "POST",
+                        data: {
+                           'csrfmiddlewaretoken': $("input[name=csrfmiddlewaretoken]").val(),
+                           'cases': JSON.stringify(cases),
                            'sklad': sklad,
                            'metro': metro,
                            'commentary': comment
-                       },
+                        },
                         success: (data)=>{
                            app.printout(data);
                         },

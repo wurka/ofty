@@ -1,7 +1,9 @@
 from django.shortcuts import render, HttpResponse
-from django.contrib.auth import authenticate, login as django_login
+from django.http import JsonResponse
+from django.contrib.auth import authenticate, login as django_login, logout as django_logout
 from django.contrib.auth.models import User
-from account.models import OftyUser
+from account.models import OftyUser, OftyUserRentLord, DeliveryCase
+import json
 
 
 # Create your views here.
@@ -21,7 +23,7 @@ def login(request):
 
 
 def logout(request):
-	request.user.logout()
+	django_logout(request)
 	if request.user.is_anonymous:
 		return HttpResponse("OK")
 	else:
@@ -48,11 +50,81 @@ def demo(request):
 
 
 def password_set(request):
-	return HttpResponse("password set")
+	if "password" not in request.POST:
+		return HttpResponse("password not specified", status=500)
+	if request.user.is_anonymous:
+		return HttpResponse("you are not loggined yet", status=500)
+	else:
+		oldname = request.user.username
+		request.user.set_password(request.POST["password"])
+		request.user.save()
+		user = authenticate(request, username=oldname, password=request.POST["password"])
+		if user is not None:
+			django_login(request, user)
+		else:
+			return HttpResponse("unpredictable password_set result", status=500)
+		return HttpResponse("OK")
+
+
+def delivery_get(request):
+	if request.user.is_anonymous:
+		return HttpResponse("you must be loggined in", status=500)
+	cases = DeliveryCase.objects.filter(user=request.user)
+	try:
+		rent_lord = OftyUserRentLord.objects.get(user=request.user)
+	except OftyUserRentLord.DoesNotExist:
+		rent_lord = OftyUserRentLord.objects.create(user=request.user)
+	ans = {
+		"sklad": json.dumps(rent_lord.sklad),
+		"metro": json.dumps(rent_lord.metro),
+		"commentary": json.dumps(rent_lord.commentary),
+		"cases": json.dumps([
+			{
+				"name": x.name,
+				"value": x.value
+			} for x in cases])
+	}
+	return JsonResponse(ans)
 
 
 def delivery_set(request):
-	return HttpResponse("delivery set")
+	if request.user.is_anonymous:
+		return HttpResponse("you must be loggined in", status=500)
+
+	if request.method != "POST":
+		return HttpResponse("please use POST method for this page", status=500)
+
+	must_be = ["cases", "sklad", "metro", "commentary"]
+	for must in must_be:
+		if must not in request.POST:
+			return HttpResponse(f"There is no parameter {must}", status=500)
+	try:
+		delivery_cases = json.loads(request.POST["cases"])
+		if type(delivery_cases) is not list:
+			return HttpResponse("cases parameter must be a JSON list object", status=500)
+	except json.JSONDecodeError:
+		return HttpResponse("wrong data format (invalid JSON)", status=500)
+	sklad = request.POST["sklad"]
+	metro = request.POST["metro"]
+	commentary = request.POST["commentary"]
+
+	try:
+		rent_lord = OftyUserRentLord.objects.get(user=request.user)
+	except OftyUserRentLord.DoesNotExist:  # если записи нет - создаём её
+		rent_lord = OftyUserRentLord.objects.create(user=request.user)
+
+	rent_lord.sklad = sklad
+	rent_lord.metro = metro
+	rent_lord.commentary = commentary
+	rent_lord.save()
+
+	try:
+		for case in delivery_cases:
+			DeliveryCase.objects.create(user=request.user, name=case["name"], value=case["value"])
+	except KeyError:
+		return HttpResponse("invalid JSON string content", status=500)
+
+	return HttpResponse("OK")
 
 
 def time_set(request):

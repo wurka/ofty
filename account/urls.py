@@ -10,6 +10,7 @@ urlpatterns = [
 	path('demo', views.demo),
 	path('password-set', views.password_set),
 	path('delivery-set', views.delivery_set),
+	path('delivery-get', views.delivery_get),
 	path('time-set', views.time_set),
 	path('new-account', views.new_account)
 ]
