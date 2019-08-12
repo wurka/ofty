@@ -12,5 +12,7 @@ urlpatterns = [
 	path('delivery-set', views.delivery_set),
 	path('delivery-get', views.delivery_get),
 	path('time-set', views.time_set),
-	path('new-account', views.new_account)
+	path('time-get', views.time_get),
+	path('new-account', views.new_account),
+	path('save-avatar', views.save_avatar),
 ]

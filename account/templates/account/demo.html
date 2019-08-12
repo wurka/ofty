@@ -61,7 +61,7 @@
                 Черный список
             </div>
         </div>
-        <div id="right-panel">
+        <div id="right-panel" style="width: 500px">
             <div v-if="activePanel=='register'">
                 <form action="/account/new_account" @submit="register" autocomplete="off">
                     <div>
@@ -88,6 +88,8 @@
                 </form>
             </div>
             <div v-if="activePanel=='avatar'">
+                <img src="/static/user_{{ user_id }}/avatar-170.png?time={{ time }}" alt="avatar170.png">
+                <img src="/static/user_{{ user_id }}/avatar-71.png?time={{ time }}" alt="avatar71.png">
                 <form action="/account/change-avatar" @submit="avatarSave" autocomplete="off">
                     <input type="file" name="avatar" id="avatar">
                     <input type="submit" value="save">
@@ -126,6 +128,7 @@
                 </div>
             </div>
             <div v-if="activePanel=='time'">
+                <input type="button" value="Get actual work time from server" @click="timeGet">
                 <form action="/account/time-set" @submit="timeSave" autocomplete="off">
                     <div v-for="(x, indx) in 7">
                         <input type="checkbox" :id="[['day-' + x]]"> <label :for="[['day-' + x]]">
@@ -150,19 +153,19 @@
                     <input type="submit" value="save">
                 </form>
             </div>
-            <div id="output">[[ output ]]</div>
+            <div id="output">Ответ от сервера: [[ output ]]</div>
         </div>
     </div>
     <script>
         let app = new Vue({
             el: '#app',
             data: {
-                activePanel: 'rent',
-                output: '...'
+                activePanel: 'avatar',
+                output: 'н/д'
             },
             methods: {
                 printout: function(text){
-                    $("#output").html((new Date()).toString() + "<br>" + text);
+                    $("#output").html("Время ответа: " + (new Date()).toString() + "<br>Ответ: " + text);
                 },
                 register: function(e){
                     e.preventDefault();
@@ -185,6 +188,27 @@
                 },
                 avatarSave: function (e) {
                     e.preventDefault();
+
+                    //console.log($("input[name=avatar]"));
+                    let fls = $("input[name=avatar]")[0].files;
+                    if (fls.length === 0) {
+                        alert("Выберите аватар");
+                    } else {
+                        let data = new FormData();
+                        data.append("avatar", fls[0]);
+                        data.append("csrfmiddlewaretoken", $("input[name=csrfmiddlewaretoken]").val());
+                        $.ajax({
+                            url: "/account/save-avatar",
+                            data: data,
+                            method: "POST",
+                            cache: false,
+                            contentType: false,
+                            processData: false,
+                            success: (data)=>{ app.printout(data); },
+                            error: (data)=>{ app.printout(data.responseText); }
+                        })
+                    }
+
                     console.log("nu ok...");
                 },
                 passwordSave: function (e) {
@@ -241,6 +265,13 @@
                         }
                     });
                 },
+                timeGet: function () {
+                    $.ajax({
+                        url: "/account/time-get",
+                        success: (data)=>{ app.printout(JSON.stringify(data)); console.log(data);},
+                        error: (data)=>{ app.printout(data.responseText)}
+                    });
+                },
                 timeSave: function (e) {
                     e.preventDefault();
 
@@ -279,11 +310,14 @@
                             "time-from": $("input[id=day-from-7]").val(),
                             "time-to": $("input[id=day-to-7]").val(),
                             "enable": $("input[id=day-7]").prop('checked')
-                        }
+                        },
+                        "csrfmiddlewaretoken": $("input[name=csrfmiddlewaretoken]").val()
                     };
-
+console.log(days);
                     $.ajax({
                         url: '/account/time-set',
+                        method: 'POST',
+                        data: days,
                         success: (data)=>{
                             app.printout(data);
                         },
