@@ -15,4 +15,6 @@ urlpatterns = [
 	path('time-get', views.time_get),
 	path('new-account', views.new_account),
 	path('save-avatar', views.save_avatar),
+	path('alerts-set', views.alerts_set),
+	path('alerts-get', views.alerts_get),
 ]

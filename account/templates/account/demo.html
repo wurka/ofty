@@ -141,6 +141,7 @@
                 </form>
             </div>
             <div v-if="activePanel=='alerts'">
+                <input type="button" value="get alerts from server" @click="alertsGet">
                 <form action="/account/alerts-set" @submit="alertsSave" autocomplete="off">
                     <div v-for="(item, indx) in ['push', 'sound', 'smsnew', 'smsbeginend', 'mailnew', 'mailbeginend']">
                         <input type="checkbox" :id="[['enable-' + item]]">
@@ -313,7 +314,6 @@
                         },
                         "csrfmiddlewaretoken": $("input[name=csrfmiddlewaretoken]").val()
                     };
-console.log(days);
                     $.ajax({
                         url: '/account/time-set',
                         method: 'POST',
@@ -326,9 +326,31 @@ console.log(days);
                         }
                     })
                 },
+                alertsGet: function(e) {
+                    $.ajax({
+                        url: "/account/alerts-get",
+                        success: (data)=>app.printout(JSON.stringify(data)),
+                        error: (data)=>app.printout(data.responseText)
+                    })
+                },
                 alertsSave: function (e) {
                     e.preventDefault();
-                    console.log(1);
+
+                    $.ajax({
+                        url: "/account/alerts-set",
+                        method: "POST",
+                        data: {
+                            "csrfmiddlewaretoken": $("input[name=csrfmiddlewaretoken]").val(),
+                            "enable_push": $("input[id=enable-push]").prop('checked'),
+                            "enable_sound_alert": $("input[id=enable-sound]").prop('checked'),
+                            "enable_sms_new_order": $("input[id=enable-smsnew]").prop('checked'),
+                            "enable_sms_startstop": $("input[id=enable-smsbeginend]").prop('checked'),
+                            "enable_email_new_order": $("input[id=enable-mailnew]").prop('checked'),
+                            "enable_email_startstop": $("input[id=enable-mailbeginend]").prop('checked')
+                        },
+                        success: (data)=>{ app.printout(data); },
+                        error: (data)=>{ app.printout(data.responseText); }
+                    })
                 },
                 login: function (e) {
                     e.preventDefault();

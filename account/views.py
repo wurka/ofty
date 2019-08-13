@@ -11,8 +11,26 @@ from datetime import datetime
 
 
 # Create your views here.
+def logged_and_post(method):
+	def inner(request):
+		if request.user.is_anonymous:
+			return HttpResponse("you must be loggined in", status=401)
+		if request.method != "POST":
+			return HttpResponse("please use POST method", status=500)
+		return method(request)
+	return inner
+
+
+def logged(method):
+	def inner(request):
+		if request.user.is_anonymous:
+			return HttpResponse("you must be loggined in", status=401)
+		return method(request)
+	return inner
+
+
+@logged_and_post
 def login(request):
-	# TODO: сделать тут POST запросы, когда будет интерфеечка
 	if "user" not in request.POST:
 		return HttpResponse("specify user, please", status=500)
 	if "password" not in request.POST:
@@ -26,6 +44,7 @@ def login(request):
 		return HttpResponse("login failed", status=500)
 
 
+@logged_and_post
 def logout(request):
 	django_logout(request)
 	if request.user.is_anonymous:
@@ -38,11 +57,9 @@ def login_page(request):
 	return HttpResponse("Where is my login_page dude?")
 
 
+@logged
 def login_info(request):
-	if not request.user.is_authenticated:
-		return HttpResponse("You not loggined in. Go for /account/login with your user, password pair")
-	else:
-		return HttpResponse(f"You loggined as {request.user.username} ({request.user.id})")
+	return HttpResponse(f"You loggined as {request.user.username} ({request.user.id})")
 
 
 def demo(request):
@@ -54,11 +71,10 @@ def demo(request):
 	return render(request, 'account/demo.html', params)
 
 
+@logged_and_post
 def password_set(request):
 	if "password" not in request.POST:
 		return HttpResponse("password not specified", status=500)
-	if request.user.is_anonymous:
-		return HttpResponse("you are not loggined yet", status=500)
 	else:
 		oldname = request.user.username
 		request.user.set_password(request.POST["password"])
@@ -71,9 +87,8 @@ def password_set(request):
 		return HttpResponse("OK")
 
 
+@logged
 def delivery_get(request):
-	if request.user.is_anonymous:
-		return HttpResponse("you must be loggined in", status=500)
 	cases = DeliveryCase.objects.filter(user=request.user)
 	try:
 		rent_lord = OftyUserRentLord.objects.get(user=request.user)
@@ -92,13 +107,8 @@ def delivery_get(request):
 	return JsonResponse(ans)
 
 
+@logged_and_post
 def delivery_set(request):
-	if request.user.is_anonymous:
-		return HttpResponse("you must be loggined in", status=500)
-
-	if request.method != "POST":
-		return HttpResponse("please use POST method for this page", status=500)
-
 	must_be = ["cases", "sklad", "metro", "commentary"]
 	for must in must_be:
 		if must not in request.POST:
@@ -132,10 +142,8 @@ def delivery_set(request):
 	return HttpResponse("OK")
 
 
+@logged_and_post
 def time_set(request):
-	if request.user.is_anonymous:
-		return HttpResponse("you must be loggined in", status=401)
-
 	for day in ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]:
 		for attribute in ["[time-from]", "[time-to]", "[enable]"]:
 			if day+attribute not in request.POST:
@@ -214,10 +222,8 @@ def time_set(request):
 	return HttpResponse("OK")
 
 
+@logged
 def time_get(request):
-	if request.user.is_anonymous:
-		return HttpResponse("you must be loggined in", status=401)
-
 	try:
 		lord = OftyUserRentLord.objects.get(user=request.user)
 	except OftyUserRentLord.DoesNotExist:
@@ -281,10 +287,8 @@ def new_account(request):
 		return HttpResponse("OK")
 
 
+@logged_and_post
 def save_avatar(request):
-	if request.user.is_anonymous:
-		return HttpResponse("you must be loggined in", status=500)
-
 	avatar_file_folder = os.path.join("user_uploads", f"user_{request.user.id}")
 
 	os.makedirs(avatar_file_folder, exist_ok=True)
@@ -313,3 +317,48 @@ def save_avatar(request):
 	img_71.save(avatar_file_path, "PNG")
 
 	return HttpResponse("OK")
+
+
+@logged_and_post
+def alerts_set(request):
+	for param in [
+		"enable_push", "enable_sound_alert", "enable_sms_new_order", "enable_sms_startstop",
+		"enable_email_new_order", "enable_email_startstop"]:
+		if param not in request.POST:
+			return HttpResponse(f"there is no parameter {param}", status=500)
+
+	try:
+		ofty_user = OftyUser.objects.get(user=request.user)
+	except OftyUser.DoesNotExist:
+		ofty_user = OftyUser.objects.create(user=request.user)
+
+	try:
+		ofty_user.enable_push = json.loads(request.POST["enable_push"])
+		ofty_user.enable_sound_alert = json.loads(request.POST["enable_sound_alert"])
+		ofty_user.enable_sms_new_order = json.loads(request.POST["enable_sms_new_order"])
+		ofty_user.enable_sms_startstop = json.loads(request.POST["enable_sms_startstop"])
+		ofty_user.enable_email_new_order = json.loads(request.POST["enable_email_new_order"])
+		ofty_user.enable_email_startstop = json.loads(request.POST["enable_email_startstop"])
+		ofty_user.save()
+	except ValueError:
+		return HttpResponse("invalid syntax", status=500)
+
+	return HttpResponse("OK")
+
+
+@logged
+def alerts_get(request):
+	try:
+		ofty_user = OftyUser.objects.get(user=request.user)
+	except OftyUser.DoesNotExist:
+		ofty_user = OftyUser.objects.create(user=request.user)
+
+	ans = {
+		"enable_push": ofty_user.enable_push,
+		"enable_sound_alert": ofty_user.enable_sound_alert,
+		"enable_sms_new_order": ofty_user.enable_sms_new_order,
+		"enable_sms_startstop": ofty_user.enable_sms_startstop,
+		"enable_email_new_order": ofty_user.enable_email_new_order,
+		"enable_email_startstop": ofty_user.enable_email_startstop
+	}
+	return JsonResponse(ans)
