@@ -10,7 +10,16 @@ from django.contrib.sitemaps import Sitemap
 from django.db.models import Q
 
 
+def logged(method):
+	def inner(request):
+		if request.user.is_anonymous:
+			return HttpResponse("you must be loggined in", status=401)
+		return method(request)
+	return inner
+
+
 # Create your views here.
+@logged
 def add_new_unit(request):
 	"""
 	Добавление нового товара
@@ -88,6 +97,7 @@ def add_new_unit(request):
 		new_unit.rent_min_days = rent_min_days
 		new_unit.day_cost = day_cost
 		new_unit.description = description
+		new_unit.owner = request.user
 
 		# проверка на то, что группа, которую предлагает пользователь - существует
 		try:
@@ -301,30 +311,44 @@ def get_group_parameters(request):
 			return HttpResponse("some extract error", status=500)
 
 
+@logged
 def get_my_units(request):
+	last_id = 0
 	if "offset" in request.GET and "size" in request.GET and "filter" in request.GET:
 		try:
 			offset = int(request.GET["offset"])
 			size = int(request.GET["size"])
 			filt = request.GET["filter"].lower()
-			my_units = Unit.objects.filter(is_deleted=False).filter(search_string__icontains=filt)
+			my_units = Unit.objects.filter(is_deleted=False, owner=request.user)
+			my_units = my_units.filter(search_string__icontains=filt).order_by('group__name')
 			my_units = my_units[offset: offset + size]
+
+			if "last-group-id" in request.GET:
+				try:
+					last_id = int(request.GET["last-grou-id"])
+				except ValueError:
+					return HttpResponse("last-grou-id parameter must be integer", status=500)
+
 		except ValueError:
 			return HttpResponse("offset and size must be integers", status=500)
 	else:
-		my_units = Unit.objects.filter(is_deleted=False)
+		my_units = Unit.objects.filter(is_deleted=False, owner=request.user).order_by('group__name')
 
 	ans = list()
-	ans.append({
-		'type': "header1",
-		'text': "Заголовок 1"
-	})
-	ans.append({
-		'type': "header2",
-		'text': "Заголовок 2"
-	})
 
 	for unit1 in my_units:
+		if unit1.group.id != last_id:  # предыдущая группа была не такой, как эта
+			group = unit1.group
+			level = 1
+			while group is not None:
+				ans.append({
+					"type": f"header{level}",
+					"text": group.name
+				})
+				group = group.parent
+				level += 1
+			last_id = unit1.group.id
+
 		appended_unit = {
 			'type': 'unit',
 			'id': unit1.id,

@@ -2,6 +2,7 @@ from django.db import models
 from datetime import datetime
 import pytz
 from django.urls import reverse
+from django.contrib.auth.models import User
 
 
 # Create your models here.
@@ -33,6 +34,7 @@ class Keyword(models.Model):
 
 
 class Unit(models.Model):
+	owner = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)  # хозяин товара
 	weight = models.FloatField(default=0)  # кг, вес
 	bail = models.FloatField(default=0)  # рублей, залог
 	count = models.FloatField(default=0)  # шт., количество

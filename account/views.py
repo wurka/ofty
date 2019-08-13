@@ -29,7 +29,6 @@ def logged(method):
 	return inner
 
 
-@logged_and_post
 def login(request):
 	if "user" not in request.POST:
 		return HttpResponse("specify user, please", status=500)
@@ -55,11 +54,6 @@ def logout(request):
 
 def login_page(request):
 	return HttpResponse("Where is my login_page dude?")
-
-
-@logged
-def login_info(request):
-	return HttpResponse(f"You loggined as {request.user.username} ({request.user.id})")
 
 
 def demo(request):
@@ -159,9 +153,9 @@ def time_set(request):
 				h = int(splitted[0])
 				m = int(splitted[1])
 				if h < 0 or h > 23:
-					return HttpResponse(f"hours must be from 0 to 23, not {splitted[0]}")
+					return HttpResponse(f"hours must be from 0 to 23, not {splitted[0]}", status=500)
 				if m < 0 or m > 59:
-					return HttpResponse(f"minutes must be from 0 to 59, not {splitted[1]}")
+					return HttpResponse(f"minutes must be from 0 to 59, not {splitted[1]}", status=500)
 
 			except ValueError:
 				HttpResponse(f"hour and minute must be valid integers. invalid value: {value}", status=500)
@@ -361,4 +355,17 @@ def alerts_get(request):
 		"enable_email_new_order": ofty_user.enable_email_new_order,
 		"enable_email_startstop": ofty_user.enable_email_startstop
 	}
+	return JsonResponse(ans)
+
+
+def about_me(request):
+	ans = {
+		"username": "anonymous",
+		"anonymous": True,
+		"city": "Moscow"
+	}
+	if not request.user.is_anonymous:
+		ans["username"] = request.user.username
+		ans["anonymous"] = False
+
 	return JsonResponse(ans)

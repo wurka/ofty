@@ -6,7 +6,6 @@ urlpatterns = [
 	url(r'^login$', views.login),
 	path('logout', views.logout),
 	url(r'^login-page$', views.login_page),
-	url(r'^status$', views.login_info),
 	path('demo', views.demo),
 	path('password-set', views.password_set),
 	path('delivery-set', views.delivery_set),
@@ -17,4 +16,5 @@ urlpatterns = [
 	path('save-avatar', views.save_avatar),
 	path('alerts-set', views.alerts_set),
 	path('alerts-get', views.alerts_get),
+	path('about-me', views.about_me)
 ]

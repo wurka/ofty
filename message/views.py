@@ -14,17 +14,21 @@ def test(request):
 
 
 def demo(request):
-	return render(request, 'message/demo.html')
+	params = {
+		"username": request.user.username if not request.user.is_anonymous else "Anonymous",
+		"userid": request.user.id if not request.user.is_anonymous else "X",
+	}
+	return render(request, 'message/demo.html', params)
 
 
-def create_conversation(request):
-	must_be = ["title", "members"]
+def new_conversation(request):
+	must_be = ["name", "members"]
 	for must in must_be:
 		if must not in request.POST:
 			return HttpResponse(f"There is no parameter {must} in POST request", status=500)
 
-	reg = re.compile("[a-zA-Zа-яА-Я0-9]")
-	title = request.POST["title"]
+	reg = re.compile("[a-zA-Zа-яА-Я0-9]+")
+	title = request.POST["name"]
 
 	checked = False
 	match = reg.match(title)
@@ -55,6 +59,8 @@ def create_conversation(request):
 
 	except KeyError:
 		return HttpResponse("Uknown error in create_conversation", status=500)
+	except json.JSONDecodeError:
+		return HttpResponse("invalid value: members must be valid JSON array", status=500)
 
 	# все пользователи валидны, а title проверен
 	new_conversation = Conversation(
@@ -74,7 +80,7 @@ def add_member_to_conversation(request):
 	return HttpResponse("OK")
 
 
-def get_my_conversations(request):
+def my_conversations(request):
 	# взять Юзера
 	me = ConversationMember.objects.all()
 	ans = list()

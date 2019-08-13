@@ -26,18 +26,117 @@
             })
         }
     </script>
+    <link rel="icon" href="{% static 'img/shared/favicon.ico' %}">
 </head>
 <body>
-    <div class="layout" style="display: flex; width: 800px; margin: auto;">
+    {% csrf_token %}
+    <div>you loggined as {{ username }} ({{ userid }})</div>
+    <div class="layout" id="app" style="display: flex; width: 800px; margin: auto;">
         <div style="width: 300px; border: 1px solid gray; border-width: 0 1px 0 0">
-            <div class="button" onclick="loadConversations()">
+            <div class="button" @click="setMode('my-conversations')"
+                 v-bind:class="{ selected : mode == 'my-conversations' }">
                 Список бесед
             </div>
-            <div class="button">
-                Беседа с id <input type="text" name="conversid" style="width: 30px">
+            <div class="button" @click="setMode('new-conversation')"
+                v-bind:class="{ selected : mode == 'new-conversation' }">
+                Новая беседа
+            </div>
+            <div class="button" @click="setMode('conversation')"
+                v-bind:class="{ selected : mode == 'conversation' }">
+                Просмотр беседы
+            </div>
+            <div class="button" @click="setMode('new-message')"
+                v-bind:class="{ selected : mode == 'new-message' }">
+                Новое сообщение
+            </div>
+            <div class="button" @click="setMode('delete-message')"
+                v-bind:class="{ selected : mode == 'delete-message' }">
+                Удалить сообщение
+            </div>
+            <div class="button" @click="setMode('delete-conversation')"
+                v-bind:class="{ selected : mode == 'delete-conversation' }">
+                Удалить беседу
+            </div>
+            <div class="button" @click="setMode('remove-member')"
+                v-bind:class="{ selected : mode == 'remove-member' }">
+                Удалить участника беседы
             </div>
         </div>
-        <div id="output"></div>
+        <div class="right-panel" style="width: 500px">
+            <div v-if="mode=='my-conversations'">
+                <input type="button" value="get my conversations" @click="myConversations">
+            </div>
+            <div v-if="mode=='new-conversation'">
+                <label for="new-conversation-name">Название беседы</label>
+                <input type="text" id="new-conversation-name" value="conversation">
+                <br>
+                <label for="new-conversation-members">Участники (JSON массив)</label>
+                <input type="text" id="new-conversation-members" value="[]">
+                <br>
+                <input type="button" value="create new conversation" @click="newConversation">
+            </div>
+            <div v-if="mode=='conversation'">
+                <label for="conversation-id">conversation id</label>
+                <input type="text" name="conversation-id" id="conversation-id" value="1">
+                <input type="button" value="load conversation" @click="conversationView">
+            </div>
+            <div id="output"></div>
+        </div>
     </div>
+    <script src="{% static 'js/shared/vue.js' %}"></script>
+    <script>
+        let app = new Vue({
+            el: "#app",
+            data: {
+                mode: "",
+                delimiters: ["[[", "]]"]
+            },
+            methods: {
+                printout(text){
+                    $("#output").html("Время ответа: " + (new Date()).toString() + "<br>Ответ: " + text);
+                },
+                setMode (newMode) {
+                    app.mode = newMode;
+                },
+                myConversations() {
+                    $.ajax({
+                        url: "/message/my-conversations",
+                        success(data) { app.printout(JSON.stringify(data)); },
+                        error(data) { app.printout(data.responseText); }
+                    })
+                },
+                newConversation() {
+                    $.ajax({
+                        url: "/message/new-conversation",
+                        method: "POST",
+                        data: {
+                            "csrfmiddlewaretoken": $("input[name=csrfmiddlewaretoken]").val(),
+                            "name": $("input[id=new-conversation-name]").val(),
+                            "members": $("input[id=new-conversation-members]").val()
+                        },
+                        success(data) { app.printout(data); },
+                        error(data) { app.printout(data.responseText) }
+                    })
+                },
+                conversationView() {
+                    $.ajax({
+                        url: "/message/conversation-view",
+                        /*!!!!!*/
+                    })
+                }
+
+            },
+            mounted() {
+                if (localStorage.mode) {
+                    this.mode = localStorage.mode;
+                }
+            },
+            watch: {
+                mode(newValue) {
+                    localStorage.mode = newValue;
+                }
+            }
+        })
+    </script>
 </body>
 </html>

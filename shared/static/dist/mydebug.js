@@ -1,5 +1,5 @@
 var fff = 444;
-var b_server = 'localhost:8000';
+var b_server = 'localhost:9000';
 var f_server = 'localhost:8080';
 
 
@@ -34,7 +34,7 @@ function myajax(url,mydata) {
 }
 function b_ax(ax) {
   return (ax.create({
-    baseURL: 'http://localhost:8000/'
+    baseURL: 'http://localhost:9000/'
   }))
 }
 

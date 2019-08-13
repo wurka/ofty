@@ -6,6 +6,7 @@ from django.urls import path
 urlpatterns = [
 	url(r'^test/', views.test),
 	path('demo', views.demo),
-	path('get-my-conversations', views.get_my_conversations),
+	path('my-conversations', views.my_conversations),
+	path('new-conversation', views.new_conversation),
 
 ]

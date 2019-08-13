@@ -34,7 +34,8 @@
     <div class="layout" id="app" style="display: flex; width: 800px; margin: auto;">
         {% csrf_token %}
         <div style="width: 300px; border: 1px solid gray; border-width: 0 1px 0 0">
-            <div class="button" onclick="loadConversations()" v-bind:class="{selected: activePanel=='register'}" @click="setActive('register')">
+            <div class="button" onclick="loadConversations()" v-bind:class="{selected: mode=='register'}"
+                 @click="setActive('register')">
                 Зарегистрироваться
             </div>
             <div class="button" v-bind:class="{selected: activePanel=='loginout'}" @click="setActive('loginout')">
@@ -377,6 +378,16 @@
                         success: (data)=>{app.printout(data)},
                         error: (data)=>{app.printout(data.responseText)}
                     })
+                }
+            },
+            mounted() {
+                if (localStorage.activePanel) {
+                    this.activePanel = localStorage.activePanel;
+                }
+            },
+            watch: {
+                activePanel(newValue) {
+                    localStorage.activePanel = newValue
                 }
             },
             delimiters: ['[[', ']]']
