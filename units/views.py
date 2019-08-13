@@ -339,14 +339,20 @@ def get_my_units(request):
 	for unit1 in my_units:
 		if unit1.group.id != last_id:  # предыдущая группа была не такой, как эта
 			group = unit1.group
-			level = 1
+			groups = list()
+			# формирование списка заголовков
 			while group is not None:
+				groups.insert(0, group)  # Нужен обратный порядок
+				group = group.parent
+
+			level = 1
+			for g in groups:
 				ans.append({
 					"type": f"header{level}",
-					"text": group.name
+					"text": g.name
 				})
-				group = group.parent
 				level += 1
+
 			last_id = unit1.group.id
 
 		appended_unit = {
