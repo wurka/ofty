@@ -19,6 +19,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+	path('demo', views.demo),
 	url(r'^add-new-unit$', views.add_new_unit, name='units/add-new-unit'),
 	url(r'^add-new-unit-test$', views.add_new_unit_test),
 	url(r'^get-groups$', views.get_groups),
@@ -28,5 +29,8 @@ urlpatterns = [
 	url(r'^color-picker-source$', views.color_picker_source),
 	url(r'^materials-source$', views.materials_source),
 	url(r'^delete-unit$', views.delete_unit),
-	path('unit/<int:unit_id>', views.unit, name='units/unit')
+	path('unit/<int:unit_id>', views.unit, name='units/unit'),
+	path('publish', views.publish),
+	path('unpublish', views.unpublish),
+	path('update', views.update)
 ]

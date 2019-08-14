@@ -1,0 +1,114 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>account: demo</title>
+    <link rel="icon" href="{% static 'img/shared/favicon.ico' %}">
+    <style>
+        .button{
+            background: white;
+            cursor: pointer;
+        }
+        .button:hover{
+            text-decoration: underline;
+        }
+        .selected{
+            font-weight: bold;
+        }
+    </style>
+    <script src="{% static 'js/shared/jquery-3.4.1.min.js' %}"></script>
+    <script src="{% static 'js/shared/vue.js' %}"></script>
+</head>
+<body>
+    <div>you loggined as {{  username }} ({{ userid }})</div>
+    <div class="layout" id="app" style="display: flex; width: 800px; margin: auto;">
+        {% csrf_token %}
+        <div style="width: 300px; border: 1px solid gray; border-width: 0 1px 0 0">
+            <div class="button" v-bind:class="{selected: activePanel=='publish'}"
+                 @click="setActive('publish')">
+                Опубликовать
+            </div>
+            <div class="button" v-bind:class="{selected: activePanel=='unpublish'}" @click="setActive('unpublish')">
+                Снять публикацию
+            </div>
+            <div class="button" v-bind:class="{selected: activePanel=='change'}" @click="setActive('change')">
+                Изменить параметры
+            </div>
+        </div>
+        <div id="right-panel" style="width: 500px">
+            <div v-if="activePanel=='publish'">
+                <form action="/units/publish" @submit="publish" autocomplete="off">
+                    <div>
+                        <label for="publish-id">id товара</label><input type="text" id="publish-id">
+                    </div>
+                    <input type="submit" value="publish">
+                </form>
+            </div>
+            <div v-if="activePanel=='unpublish'">
+                <form action="/units/unpublish" @submit="unpublish" autocomplete="off">
+                    <div>
+                        <label for="unpublish-id">id товара</label><input type="text" id="unpublish-id">
+                    </div>
+                    <input type="submit" value="unpublish">
+                </form>
+            </div>
+            <div id="output">Ответ от сервера: [[ output ]]</div>
+        </div>
+    </div>
+    <script>
+        let app = new Vue({
+            el: '#app',
+            data: {
+                activePanel: 'publish',
+                output: 'н/д'
+            },
+            methods: {
+                printout: function(text){
+                    $("#output").html("Время ответа: " + (new Date()).toString() + "<br>Ответ: " + text);
+                },
+                setActive(newValue){
+                    app.activePanel = newValue;
+                },
+                publish(e){
+                    e.preventDefault();
+                    $.ajax({
+                        url: "/units/publish",
+                        method: "POST",
+                        data: {
+                            "id": $("input[id=publish-id]").val(),
+                            "csrfmiddlewaretoken": $("input[name=csrfmiddlewaretoken]").val()
+                        },
+                        success(data) { app.printout(data) },
+                        error(data) {app.printout(data.responseText)}
+                    })
+                },
+                unpublish(e){
+                    e.preventDefault();
+                    $.ajax({
+                        url: "/units/unpublish",
+                        method: "POST",
+                        data: {
+                            "id": $("input[id=unpublish-id]").val(),
+                            "csrfmiddlewaretoken": $("input[name=csrfmiddlewaretoken]").val()
+                        },
+                        success(data) { app.printout(data) },
+                        error(data) {app.printout(data.responseText)}
+                    })
+                }
+            },
+            mounted() {
+                if (localStorage.activePanel) {
+                    this.unitsActivePanel = localStorage.unitsActivePanel;
+                }
+            },
+            watch: {
+                activePanel(newValue) {
+                    localStorage.unitsActivePanel = newValue
+                }
+            },
+            delimiters: ['[[', ']]']
+        })
+    </script>
+</body>
+</html>

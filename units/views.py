@@ -7,7 +7,14 @@ import os
 from datetime import datetime
 from django.http import JsonResponse
 from django.contrib.sitemaps import Sitemap
-from django.db.models import Q
+
+
+def demo(request):
+	pars = {
+		"username": "Anonymous" if request.user.is_anonymous else request.user.username,
+		"userid": "X" if request.user.is_anonymous else request.user.id
+	}
+	return render(request, 'units/demo.html', pars)
 
 
 def logged(method):
@@ -18,29 +25,50 @@ def logged(method):
 	return inner
 
 
+def post_with_parameters(*args):
+	def decor(method):
+		def response(request):
+			if request.method != "POST":
+				return HttpResponse(f"please use POST request, not {request.method}", status=500)
+			for param in args:
+				if param not in request.POST:
+					return HttpResponse(f"there is no parameter {param}", status=500)
+			return method(request)
+		return response
+	return decor
+
+
+def get_with_parameters(*args):
+	def decor(method):
+		def response(request):
+			if request.method != "GET":
+				return HttpResponse(f"please use GET request, not {request.method}", status=500)
+			for param in args:
+				if param not in request.GET:
+					return HttpResponse(f"there is no parameter {param}", status=500)
+			return method(request)
+		return response
+	return decor
+
+
 # Create your views here.
 @logged
+@post_with_parameters(
+	"weight", "bail", "count", "title", "first-day-cost", "rent-min-days", "day-cost",
+	"unit-group", "unit-colors", "parameters",
+	"unit-materials", "sets", "keywords", "description", "published")
 def add_new_unit(request):
 	"""
 	Добавление нового товара
 	:param request:
 	:return: ОК - если добавлено. status = 500 и текст ошибки, если не удалось добавить
 	"""
-	must_be = [
-		"weight", "bail", "count", "title", "first-day-cost", "rent-min-days", "day-cost",
-		"unit-group", "unit-colors", "parameters",
-		"unit-materials", "sets", "keywords", "description"
-	]
 	must_be_files = ["photo1", "photo2", "photo3", "photo4", "photo5"]
 
 	for mfile in must_be_files:
 		if mfile in request.FILES:
 			print(f"accepted file <{mfile}>")
 			# return HttpResponse("There is no photo1 - photo5 files", status=500)
-
-	for m in must_be:
-		if m not in request.POST:
-			return HttpResponse(f"There is no parameter {m} in POST request", status=500)
 
 	try:
 		param = "weight"
@@ -60,7 +88,7 @@ def add_new_unit(request):
 		first_day_cost = float(request.POST[param])
 
 		param = "rent-min-days"
-		rent_min_days = float(request.POST[param])
+		rent_min_days = int(request.POST[param])
 
 		param = "day-cost"
 		day_cost = float(request.POST[param])
@@ -98,6 +126,7 @@ def add_new_unit(request):
 		new_unit.day_cost = day_cost
 		new_unit.description = description
 		new_unit.owner = request.user
+		new_unit.published = json.loads(request.POST["published"])
 
 		# проверка на то, что группа, которую предлагает пользователь - существует
 		try:
@@ -183,8 +212,8 @@ def add_new_unit(request):
 			new_unit_set.save()
 
 		# keywords
-		if type(unit_sets) is not list:
-			param = "sets"
+		if type(unit_keywords) is not list:
+			param = "keywords"
 			raise ValueError()
 		for keyword in unit_keywords:
 			keyword = keyword.lower()
@@ -284,31 +313,29 @@ def get_groups(request):
 	return HttpResponse(ans)
 
 
+@get_with_parameters("groupid")
 def get_group_parameters(request):
-	if "groupid" not in request.GET:
-		return HttpResponse("no groupid specified", status=500)
-	else:
-		try:
-			gid = int(request.GET["groupid"])
-			group = Group.objects.get(id=gid)
-			pars = GroupParameter.objects.filter(owner=group)
-			parameters = [{
-				"id": p.id,
-				"name": p.name,
-				"dimension": p.dimension
-			} for p in pars]
+	try:
+		gid = int(request.GET["groupid"])
+		group = Group.objects.get(id=gid)
+		pars = GroupParameter.objects.filter(owner=group)
+		parameters = [{
+			"id": p.id,
+			"name": p.name,
+			"dimension": p.dimension
+		} for p in pars]
 
-			ans = {
-				"picture": request.build_absolute_uri("/static/img/grouppreview/" + group.picture),
-				"parameters": json.dumps(parameters)
-			}
-			return HttpResponse(json.dumps(ans))
-		except ValueError:
-			return HttpResponse("wrong groupid value", status=500)
-		except Group.DoesNotExist:
-			return HttpResponse(f"there is no group with id {gid}", status=500)
-		except GroupParameter.DoesNotExist:
-			return HttpResponse("some extract error", status=500)
+		ans = {
+			"picture": request.build_absolute_uri("/static/img/grouppreview/" + group.picture),
+			"parameters": json.dumps(parameters)
+		}
+		return HttpResponse(json.dumps(ans))
+	except ValueError:
+		return HttpResponse("wrong groupid value", status=500)
+	except Group.DoesNotExist:
+		return HttpResponse(f"there is no group with id {gid}", status=500)
+	except GroupParameter.DoesNotExist:
+		return HttpResponse("some extract error", status=500)
 
 
 @logged
@@ -367,6 +394,7 @@ def get_my_units(request):
 			'day_cost': unit1.day_cost,
 			'group': unit1.group.id,
 			'commentary': unit1.description,
+			'published': unit1.published
 		}
 		# параметры (соответствующие группе)
 		unit_parameters = UnitParameter.objects.filter(unit=unit1)
@@ -460,9 +488,9 @@ def materials_source(request):
 	return JsonResponse(ans, safe=False)
 
 
+@logged
+@post_with_parameters("id")
 def delete_unit(request):
-	if 'id' not in request.POST:
-		return HttpResponse("There is no id in POST request", status=500)
 	try:
 		uid = int(request.POST['id'])
 		to_del_unit = Unit.objects.get(id=uid, is_deleted=False)
@@ -487,3 +515,128 @@ def get_sitemap(request):
 
 def unit(request, unit_id):
 	return HttpResponse(f"<div>there is unit with id: {unit_id}</div>")
+
+
+# декораторы не нужны, т.к. функция не доступна через URL
+def do_publish_unpublish(request, target):
+	try:
+		unit_one = Unit.objects.get(id=int(request.POST["id"]))
+		unit_one.published = target
+		unit_one.save()
+	except ValueError:
+		return HttpResponse(f"not valid id: {request.POST['id']}", status=500)
+	except Unit.DoesNotExist:
+		return HttpResponse(f'there is no unit with id {request.POST["id"]}', status=500)
+	return HttpResponse("OK")
+
+
+@logged
+@post_with_parameters("id")
+def publish(request):
+	return do_publish_unpublish(request, True)
+
+
+@logged
+@post_with_parameters("id")
+def unpublish(request):
+	return do_publish_unpublish(request, False)
+
+
+@logged
+@post_with_parameters(
+	"id", "weight", "bail", "count", "title", "first-day-cost", "rent-min-days", "day-cost",
+	# "unit-group",  # группу нельзя менять
+	"unit-colors", "parameters",
+	"unit-materials", "keywords", "description", "published")
+def update(request):
+	try:
+		uid = int(request.POST["id"])
+		unit_one = Unit.objects.get(id=uid)
+	except ValueError:
+		return HttpResponse(f"id must be integer, not: {request.POST['id']}", status=500)
+	except Unit.DoesNotExist:
+		return HttpResponse(f"there is no unit with id {request.POST['id']}", status=500)
+
+	try:
+		unit_one.weight = float(request.POST["weight"])
+		unit_one.bail = float(request.POST["bail"])
+		unit_one.count = int(request.POST["count"])
+		unit_one.title = request.POST["title"]
+		unit_one.first_day_cost = float(request.POST["first-day-cost"])
+		unit_one.rent_min_days = int(request.POST["rent-min-days"])
+		unit_one.day_cost = float(request.POST["day-cost"])
+		unit_one.description = request.POST["description"]
+		unit_one.published = json.loads(request.POST["published"])
+
+		base_params = GroupParameter.objects.filter(owner=unit_one.group)
+
+		# сохранение параметров группы
+		unit_parameters = json.loads(request.POST["parameters"])
+		if type(unit_parameters) is not list:
+			raise json.JSONDecodeError("parameters must be list")
+		for base_param in base_params:
+			mykey = str(base_param.id)
+			if mykey not in unit_parameters:
+				return HttpResponse(f"There is no parameter with id {mykey} in unit_parameters", status=500)
+
+			unit_param = UnitParameter.objects.get(unit=unit_one, parameter=base_param)
+			unit_param.value = unit_parameters[mykey]
+			unit_param.save()
+
+		# проверка и сохранение цветов
+		unit_colors = request.POST["unit-colors"]
+		try:
+			for color_id in unit_colors:
+				color_check = Color.objects.get(id=color_id)
+				UnitColor.objects.filter(unit=unit_one).delete()  # удаляем старые цвета
+				UnitColor.objects.create(color=color_check, unit=unit_one)
+		except Color.DoesNotExist:
+			return HttpResponse("Wrong color id", status=500)
+
+		# валидация и сохранения UnitMaterials
+		unit_materials = json.loads(request.POST["unit-materials"])
+		if type(unit_materials) is not list:
+			raise ValueError("unit-materials must be list")
+		UnitMaterial.objects.filter(unit=unit_one).delete()
+		for material_id in unit_materials:
+			base_material = Material.objects.get(id=material_id)
+			new_unit_material = UnitMaterial(
+				unit=unit_one,
+				material=base_material
+			)
+			new_unit_material.save()
+
+		# keywords
+		unit_keywords = json.loads(request.POST["keywords"])
+		if type(unit_keywords) is not list:
+			raise ValueError("keywords must be list")
+		Keyword.objects.filter(unit=unit_one).delete()  # удаление старых ключевых слов
+		for keyword in unit_keywords:
+			keyword = keyword.lower()
+			try:
+				base_keywrd = Keyword.objects.get(name=keyword)
+				new_unit_keyword = UnitKeyword(
+					unit=unit_one,
+					keyword=base_keywrd,
+					creation_time=datetime.now()
+				)
+				new_unit_keyword.save()
+			except Keyword.DoesNotExist:  # такого ключа ещё нет в базе
+				new_keyword = Keyword.objects.create(
+					name=keyword,
+					creation_time=datetime.now()
+				)
+				new_unit_keyword = UnitKeyword(
+					unit=unit_one,
+					keyword=new_keyword,
+					creation_time=datetime.now()
+				)
+				new_unit_keyword.save()
+
+		unit_one.build_search_string()  # сгенерировать строку для поиска
+	except ValueError as e:
+		return HttpResponse("wrong parameter value: " + str(e), status=500)
+	except KeyError as e:
+		return HttpResponse("wrong object structure: " + str(e), status=500)
+
+	return HttpResponse("OK")

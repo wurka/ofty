@@ -17,6 +17,7 @@ from django.conf.urls import url, include
 from django.urls import path
 from django.contrib import admin
 from django.contrib.sitemaps.views import sitemap
+from django.views.generic import RedirectView
 from . import views
 from . import sitemaps
 
@@ -30,5 +31,6 @@ urlpatterns = [
 	url(r'^$', views.index, name='index'),
 	path(
 		'sitemap.xml', sitemap, {'sitemaps': sitemaps.ofty_maps},
-		name='django.contrib.sitemaps.views.sitemaps')
+		name='django.contrib.sitemaps.views.sitemaps'),
+	path('favicon.ico', RedirectView.as_view(url='/static/img/shared/favicon.ico'), name='favicon'),
 ]

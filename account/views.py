@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from django.contrib.auth import authenticate, login as django_login, logout as django_logout
 from django.contrib.auth.models import User
 from account.models import OftyUser, OftyUserRentLord, DeliveryCase
+from units.models import Unit
 import json
 from PIL import Image
 from io import BytesIO
@@ -362,10 +363,19 @@ def about_me(request):
 	ans = {
 		"username": "anonymous",
 		"anonymous": True,
-		"city": "Moscow"
+		"city": "Москва",
+		"stock-capacity": 0,
+		"stock-occupied": 0
 	}
 	if not request.user.is_anonymous:
 		ans["username"] = request.user.username
 		ans["anonymous"] = False
+
+		try:
+			ofty_user = OftyUser.objects.get(user=request.user)
+			ans["stock-capacity"] = ofty_user.stock_size
+			ans["stock-occupied"] = len(Unit.objects.filter(owner=request.user))
+		except OftyUser.DoesNotExist:
+			return HttpResponse("its strange, but threre is no such OftyUser", status=500)
 
 	return JsonResponse(ans)

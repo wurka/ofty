@@ -13,6 +13,8 @@ class OftyUser(models.Model):
 	enable_email_new_order = models.BooleanField(default=True)  # сообщение о новом заказе
 	enable_email_startstop = models.BooleanField(default=True)  # сообщение о начале/конце аренды
 	is_deleted = models.BooleanField(default=False)  # пользователь удалён
+	stock_size = models.IntegerField(default=10)  # рамер склада
+	money = models.FloatField(default=0)  # кредитов
 
 
 class OftyUserRentLord(models.Model):
