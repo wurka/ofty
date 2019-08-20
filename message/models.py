@@ -14,6 +14,8 @@ class ConversationMember(models.Model):
 
 
 class Message(models.Model):
+	owner = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
 	conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
 	message = models.TextField(default="")
-	image = models.BinaryField(default="EMPTY_BLOB()")
+	image = models.TextField(default="")
+	is_deleted = models.BooleanField(default=False)

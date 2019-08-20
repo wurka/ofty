@@ -58,8 +58,11 @@ class Unit(models.Model):
 			group_text = parent.name + " " + group_text
 			parent = parent.parent
 
+		# все ключевые строки через пробел
+		kwrd_text = " ".join([x.keyword.name for x in UnitKeyword.objects.filter(unit=self)])
+
 		# строка приводится в нижний регистр, т.к. емучий UTF8 в SQL через жопу LIKE делал
-		self.search_string = f"{group_text} {self.description}".lower()
+		self.search_string = f"{group_text} {self.description} {self.title} {kwrd_text}".lower()
 		self.save()
 
 

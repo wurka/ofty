@@ -45,8 +45,8 @@
                 v-bind:class="{ selected : mode == 'conversation' }">
                 Просмотр беседы
             </div>
-            <div class="button" @click="setMode('new-message')"
-                v-bind:class="{ selected : mode == 'new-message' }">
+            <div class="button" @click="setMode('newmessage')"
+                v-bind:class="{ selected : mode == 'newmessage' }">
                 Новое сообщение
             </div>
             <div class="button" @click="setMode('delete-message')"
@@ -63,10 +63,10 @@
             </div>
         </div>
         <div class="right-panel" style="width: 500px">
-            <div v-if="mode=='my-conversations'">
+            <div v-if="mode=='conversation'">
                 <input type="button" value="get my conversations" @click="myConversations">
             </div>
-            <div v-if="mode=='new-conversation'">
+            <div v-if="mode=='conversation'">
                 <label for="new-conversation-name">Название беседы</label>
                 <input type="text" id="new-conversation-name" value="conversation">
                 <br>
@@ -78,7 +78,22 @@
             <div v-if="mode=='conversation'">
                 <label for="conversation-id">conversation id</label>
                 <input type="text" name="conversation-id" id="conversation-id" value="1">
+                <br>
+                <label for="conversation-offset">offset (>= 0)</label>
+                <input type="text" id="conversation-offset" value="0">
+                <br>
+                <label for="conversation-size">size (1-50)</label>
+                <input type="text" id="conversation-size" value="3">
                 <input type="button" value="load conversation" @click="conversationView">
+            </div>
+            <div v-if="mode=='conversation'">
+                <label for="newmessage-id">id беседы</label>
+                <input type="text" id="newmessage-id" name="newmessage-id">
+                <br>
+                <label for="newmessagemessage">текст сообщения</label>
+                <input type="text" id="newmessage-message" name="newmessage-message">
+                <br>
+                <input type="button" value="new message" @click="newMessage">
             </div>
             <div id="output"></div>
         </div>
@@ -121,10 +136,28 @@
                 conversationView() {
                     $.ajax({
                         url: "/message/conversation-view",
-                        /*!!!!!*/
+                        data: {
+                            "size": $("input[id=conversation-size]").val(),
+                            "offset": $("input[id=conversation-offset]").val(),
+                            "id": $("input[id=conversation-id]").val()
+                        },
+                        success(data) { app.printout(JSON.stringify(data)); },
+                        error(data) { app.printout(data.responseText); }
+                    })
+                },
+                newMessage() {
+                    $.ajax({
+                        url: "/message/new-message",
+                        method: "POST",
+                        data: {
+                            "csrfmiddlewaretoken": $("input[name=csrfmiddlewaretoken]").val(),
+                            "conversation": $("input[id=newmessage-id]").val(),
+                            "message": $("input[id=newmessage-message]").val()
+                        },
+                        success(data){app.printout(data)},
+                        error(data){app.printout(data.responseText)}
                     })
                 }
-
             },
             mounted() {
                 if (localStorage.mode) {

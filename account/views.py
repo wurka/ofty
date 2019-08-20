@@ -374,7 +374,7 @@ def about_me(request):
 		try:
 			ofty_user = OftyUser.objects.get(user=request.user)
 			ans["stock-capacity"] = ofty_user.stock_size
-			ans["stock-occupied"] = len(Unit.objects.filter(owner=request.user))
+			ans["stock-occupied"] = len(Unit.objects.filter(owner=request.user, is_deleted=False))
 		except OftyUser.DoesNotExist:
 			return HttpResponse("its strange, but threre is no such OftyUser", status=500)
 

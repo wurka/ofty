@@ -352,9 +352,9 @@ def get_my_units(request):
 
 			if "last-group-id" in request.GET:
 				try:
-					last_id = int(request.GET["last-grou-id"])
+					last_id = int(request.GET["last-group-id"])
 				except ValueError:
-					return HttpResponse("last-grou-id parameter must be integer", status=500)
+					return HttpResponse("last-group-id parameter must be integer", status=500)
 
 		except ValueError:
 			return HttpResponse("offset and size must be integers", status=500)
@@ -393,7 +393,7 @@ def get_my_units(request):
 			'rent_min_days': unit1.rent_min_days,
 			'day_cost': unit1.day_cost,
 			'group': unit1.group.id,
-			'commentary': unit1.description,
+			'description': unit1.description,
 			'published': unit1.published
 		}
 		# параметры (соответствующие группе)
@@ -433,6 +433,8 @@ def get_my_units(request):
 				'word': k.keyword.name
 			} for k in unit_keywords
 		]
+
+		appended_unit['keywords-string'] = " ".join([u.keyword.name for u in unit_keywords])
 
 		# цвета
 		aunit_colors = UnitColor.objects.filter(unit=unit1)

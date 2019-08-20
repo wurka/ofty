@@ -3,10 +3,42 @@ from django.shortcuts import render
 import re
 import json
 from django.contrib.auth.models import User
-from .models import Conversation, ConversationMember
+from .models import Conversation, ConversationMember, Message
 from django.http import JsonResponse
 
 # Create your views here.
+def logged(method):
+	def inner(request):
+		if request.user.is_anonymous:
+			return HttpResponse("you must be loggined in", status=401)
+		return method(request)
+	return inner
+
+
+def post_with_parameters(*args):
+	def decor(method):
+		def response(request):
+			if request.method != "POST":
+				return HttpResponse(f"please use POST request, not {request.method}", status=500)
+			for param in args:
+				if param not in request.POST:
+					return HttpResponse(f"there is no parameter {param}", status=500)
+			return method(request)
+		return response
+	return decor
+
+
+def get_with_parameters(*args):
+	def decor(method):
+		def response(request):
+			if request.method != "GET":
+				return HttpResponse(f"please use GET request, not {request.method}", status=500)
+			for param in args:
+				if param not in request.GET:
+					return HttpResponse(f"there is no parameter {param}", status=500)
+			return method(request)
+		return response
+	return decor
 
 
 def test(request):
@@ -82,7 +114,7 @@ def add_member_to_conversation(request):
 
 def my_conversations(request):
 	# взять Юзера
-	me = ConversationMember.objects.all()
+	me = ConversationMember.objects.filter(user=request.user)
 	ans = list()
 	for m in me:
 		ans.append({
@@ -90,3 +122,64 @@ def my_conversations(request):
 			"title": m.conversation.title
 		})
 	return JsonResponse(ans, safe=False)
+
+
+@logged
+@get_with_parameters("id", "offset", "size")
+def conversation_view(request):
+	"""
+	просмотр беседы с id. От конца беседы смещение на offset. Всего выдается максимум size сообщений
+	:param request:
+	:return:
+	"""
+	try:
+		convers = Conversation.objects.get(id=int(request.GET['id']))
+		ConversationMember.objects.get(conversation=convers, user=request.user)
+		offset = int(request.GET["offset"])
+		size = int(request.GET["size"])
+		msgs = Message.objects.filter(
+			conversation=convers, owner=request.user, is_deleted=False).order_by("-id")
+		length = len(msgs)
+		start = min(length, offset)
+		stop = min(length-offset, offset+size)
+		msgs = msgs[start, stop]
+	# такой беседы нет или пользователь не является её участником
+	except (ConversationMember.DoesNotExist, Conversation.DoesNotExist):
+		return HttpResponse(f"there is no conversation with id {request.GET['id']}", status=404)
+	except ValueError:
+		return HttpResponse("conversation, size and offset must be valid integers", status=500)
+	except Exception as e:
+		print(e)
+
+	ans = [{
+		"id": m.id,
+		"text": m.message,
+		"image": m.image,
+		"with-image": False if m.image == "" else True
+	} for m in msgs]
+
+	return JsonResponse(ans, safe=False)
+
+
+@logged
+@post_with_parameters("conversation", "message")
+def new_message(request):
+	try:
+		convers = Conversation.objects.get(id=request.POST["conversation"])
+		ConversationMember.objects.get(conversation=convers, user=request.user)
+	except (Conversation.DoesNotExist, ConversationMember.DoesNotExist):
+		return HttpResponse(f"there is no conversation with id {request.POST['conversation']}", status=404)
+	except ValueError:
+		value = request.POST['conversation']
+		return HttpResponse(f"conversation must be valid integer, not {value}", status=500)
+
+	# все учавствующие в беседе
+	members = ConversationMember.objects.filter(conversation=convers)
+	msgs = [Message(
+		owner=m.user,
+		message=request.POST["message"],
+		conversation=convers) for m in members]
+	Message.objects.bulk_create(msgs)
+
+	return HttpResponse("OK")
+
