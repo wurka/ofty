@@ -389,10 +389,10 @@ def get_my_units(request):
 			'bail': unit1.bail,
 			'count': unit1.count,
 			'title': unit1.title,
-			'first_day_cost': unit1.first_day_cost,
+			'first-day-cost': unit1.first_day_cost,
 			'rent_min_days': unit1.rent_min_days,
-			'day_cost': unit1.day_cost,
-			'group': unit1.group.id,
+			'day-cost': unit1.day_cost,
+			'unit-group': unit1.group.id,
 			'description': unit1.description,
 			'published': unit1.published
 		}
@@ -409,7 +409,7 @@ def get_my_units(request):
 
 		# материалы
 		unit_materials = UnitMaterial.objects.filter(unit=unit1)
-		appended_unit['materials'] = [
+		appended_unit['unit-materials'] = [
 			{
 				'id': m.material.id,
 				'name': m.material.name
@@ -427,24 +427,32 @@ def get_my_units(request):
 
 		# keywords (теги)
 		unit_keywords = UnitKeyword.objects.filter(unit=unit1)
-		appended_unit['keywords'] = [
+		appended_unit['keywords-info'] = [
 			{
 				'id': k.keyword.id,
 				'word': k.keyword.name
 			} for k in unit_keywords
 		]
 
-		appended_unit['keywords-string'] = " ".join([u.keyword.name for u in unit_keywords])
+		appended_unit['keywords'] = " ".join([u.keyword.name for u in unit_keywords])
 
 		# цвета
 		aunit_colors = UnitColor.objects.filter(unit=unit1)
-		appended_unit['colors'] = [
+		appended_unit['unit-colors'] = [
 			{
 				'id': c.color.id,
 				'color_group': c.color.color_group,
 				'rgb_hex': c.color.rgb_hex,
-				'texture': c.color.texture
+				'texture': request.build_absolute_uri(f"/static/img/units/texture/{c.color.texture}")
 			} for c in aunit_colors]
+
+		# информация о группах
+		unit_groups = [unit1.group]
+		parent = unit1.group.parent
+		while parent:
+			unit_groups.insert(0, parent)
+			parent = parent.parent
+		appended_unit["group-info"] = [g.name for g in unit_groups]
 
 		# список фотографий (возможно, стоит сделать заполнение базы нормальное. это может быть быстрее, чем
 		# поиск по файловой системе наличия файла и решит проблемы со списком форматов)
@@ -574,7 +582,7 @@ def update(request):
 
 		# сохранение параметров группы
 		unit_parameters = json.loads(request.POST["parameters"])
-		if type(unit_parameters) is not list:
+		if type(unit_parameters) is not dict:
 			raise json.JSONDecodeError("parameters must be list")
 		for base_param in base_params:
 			mykey = str(base_param.id)
