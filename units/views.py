@@ -390,7 +390,7 @@ def get_my_units(request):
 			'count': unit1.count,
 			'title': unit1.title,
 			'first-day-cost': unit1.first_day_cost,
-			'rent_min_days': unit1.rent_min_days,
+			'rent-min-days': unit1.rent_min_days,
 			'day-cost': unit1.day_cost,
 			'unit-group': unit1.group.id,
 			'description': unit1.description,
@@ -441,7 +441,7 @@ def get_my_units(request):
 		appended_unit['unit-colors'] = [
 			{
 				'id': c.color.id,
-				'color_group': c.color.color_group,
+				# 'color_group': c.color.color_group,
 				'rgb_hex': c.color.rgb_hex,
 				'texture': request.build_absolute_uri(f"/static/img/units/texture/{c.color.texture}")
 			} for c in aunit_colors]
@@ -452,7 +452,15 @@ def get_my_units(request):
 		while parent:
 			unit_groups.insert(0, parent)
 			parent = parent.parent
-		appended_unit["group-info"] = [g.name for g in unit_groups]
+		appended_unit["group-info"] = {
+			"groups": json.dumps([g.name for g in unit_groups]),
+			"params": [{
+				"id": up.parameter.id,
+				"name": up.parameter.name,
+				"dimension": up.parameter.dimension,
+				"value": up.value
+			} for up in UnitParameter.objects.filter(unit=unit1)]
+		}
 
 		# список фотографий (возможно, стоит сделать заполнение базы нормальное. это может быть быстрее, чем
 		# поиск по файловой системе наличия файла и решит проблемы со списком форматов)
@@ -595,10 +603,14 @@ def update(request):
 
 		# проверка и сохранение цветов
 		unit_colors = request.POST["unit-colors"]
+		unit_colors = json.loads(unit_colors)
+		if type(unit_colors) is not list:
+			raise json.JSONDecodeError("unit-colors must be list")
 		try:
+			UnitColor.objects.filter(unit=unit_one).delete()  # удаляем старые цвета
 			for color_id in unit_colors:
+				color_id = int(color_id)
 				color_check = Color.objects.get(id=color_id)
-				UnitColor.objects.filter(unit=unit_one).delete()  # удаляем старые цвета
 				UnitColor.objects.create(color=color_check, unit=unit_one)
 		except Color.DoesNotExist:
 			return HttpResponse("Wrong color id", status=500)
@@ -617,12 +629,10 @@ def update(request):
 			new_unit_material.save()
 
 		# keywords
-		unit_keywords = json.loads(request.POST["keywords"])
-		if type(unit_keywords) is not list:
-			raise ValueError("keywords must be list")
-		Keyword.objects.filter(unit=unit_one).delete()  # удаление старых ключевых слов
-		for keyword in unit_keywords:
-			keyword = keyword.lower()
+		unit_keywords = filter(None, request.POST["keywords"].split(" "))
+		UnitKeyword.objects.filter(unit=unit_one).delete()  # удаление старых ключевых слов
+		for keyword in list(unit_keywords):
+			keyword = keyword.lower().strip()
 			try:
 				base_keywrd = Keyword.objects.get(name=keyword)
 				new_unit_keyword = UnitKeyword(
