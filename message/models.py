@@ -14,7 +14,8 @@ class ConversationMember(models.Model):
 
 
 class Message(models.Model):
-	owner = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
+	owner = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True, related_name="message_owner")  # owner of msg
+	author = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True, related_name="message_author")  # write this message
 	conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
 	message = models.TextField(default="")
 	image = models.TextField(default="")

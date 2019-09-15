@@ -15,6 +15,9 @@
         .selected{
             font-weight: bold;
         }
+        h3 {
+            margin-bottom: 1px;
+        }
     </style>
     <script src="{% static 'js/shared/jquery-3.4.1.min.js' %}"></script>
     <script>
@@ -31,6 +34,7 @@
 <body>
     {% csrf_token %}
     <div>you loggined as {{ username }} ({{ userid }})</div>
+    <a href="/message/demo-gui">пример gui</a>
     <div class="layout" id="app" style="display: flex; width: 800px; margin: auto;">
         <div style="width: 300px; border: 1px solid gray; border-width: 0 1px 0 0">
             <div class="button" @click="setMode('my-conversations')"
@@ -45,7 +49,7 @@
                 v-bind:class="{ selected : mode == 'conversation' }">
                 Просмотр беседы
             </div>
-            <div class="button" @click="setMode('newmessage')"
+            <div class="button" @click="$.scrollTo('#newmessage-message')"
                 v-bind:class="{ selected : mode == 'newmessage' }">
                 Новое сообщение
             </div>
@@ -62,11 +66,13 @@
                 Удалить участника беседы
             </div>
         </div>
-        <div class="right-panel" style="width: 500px">
+        <div class="right-panel" style="width: 200px; padding-left: 10px;">
+            <h3>список бесед</h3>
             <div v-if="mode=='conversation'">
                 <input type="button" value="get my conversations" @click="myConversations">
             </div>
             <div v-if="mode=='conversation'">
+                <h3>новая беседа</h3>
                 <label for="new-conversation-name">Название беседы</label>
                 <input type="text" id="new-conversation-name" value="conversation">
                 <br>
@@ -76,6 +82,7 @@
                 <input type="button" value="create new conversation" @click="newConversation">
             </div>
             <div v-if="mode=='conversation'">
+                <h3>просмотр беседы</h3>
                 <label for="conversation-id">conversation id</label>
                 <input type="text" name="conversation-id" id="conversation-id" value="1">
                 <br>
@@ -87,14 +94,18 @@
                 <input type="button" value="load conversation" @click="conversationView">
             </div>
             <div v-if="mode=='conversation'">
+                <h3>новое сообщение</h3>
                 <label for="newmessage-id">id беседы</label>
                 <input type="text" id="newmessage-id" name="newmessage-id">
                 <br>
-                <label for="newmessagemessage">текст сообщения</label>
+                <label for="newmessage-message">текст сообщения</label>
                 <input type="text" id="newmessage-message" name="newmessage-message">
                 <br>
                 <input type="button" value="new message" @click="newMessage">
             </div>
+        </div>
+        <div class="output-panel" style="width: 350px; padding-left: 15px;">
+            <h4>ответ от сервера</h4>
             <div id="output"></div>
         </div>
     </div>
@@ -111,12 +122,15 @@
                     $("#output").html("Время ответа: " + (new Date()).toString() + "<br>Ответ: " + text);
                 },
                 setMode (newMode) {
-                    app.mode = newMode;
+                    //app.mode = newMode;
+                    $('.right-panel').animate({
+                        scrollTop: ($('#newmessage-message').offset().top)
+                    },500);
                 },
                 myConversations() {
                     $.ajax({
                         url: "/message/my-conversations",
-                        success(data) { app.printout(JSON.stringify(data)); },
+                        success(data) { app.printout(JSON.stringify(data)); console.log(data)},
                         error(data) { app.printout(data.responseText); }
                     })
                 },

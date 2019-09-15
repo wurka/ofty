@@ -1,0 +1,132 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>message gui demo</title>
+    <script src="{% static 'js/shared/jquery-3.4.1.min.js' %}"></script>
+    <script src="{% static 'js/shared/vue.js' %}"></script>
+    <style>
+        .fromto-panel input{
+            width: 30px;
+        }
+        .fromto-panel input[type=button]{
+            width: 50px;
+        }
+        .messages {
+            height: calc(100vh - 150px);
+            overflow-y: scroll;
+        }
+        .message {
+            background: lightgray;
+            margin: 3px 3px 3px 15px;
+            display: flex;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .message .icon {
+            margin: 0 5px 0 0;
+            border-radius: 16px;
+        }
+        .message img{
+            border-radius: 16px;
+        }
+        .my-message {
+            margin: 3px 15px 3px 3px;
+        }
+        .new-message {
+            padding-top: 10px;
+        }
+        .new-message textarea {
+            width: 600px;
+            height: 40px;
+            resize: none;
+        }
+        .new-message input[type=button] {
+            padding: 10px 30px 10px 30px;
+            vertical-align: top;
+        }
+    </style>
+</head>
+<body>
+    {% csrf_token %}
+    <div class="layout" style="width: 800px; margin: auto;" id="app" >
+        <label for="dialog-id">id диалога</label> <input type="text" id="dialog-id" :value="dialog_id">
+        <br>
+        <div class="fromto-panel">
+            <label for="lastid">у меня есть сообщение с id (-1 если нет ниодного)</label>
+            <input type="text" id="lastid" v-model:value="lastid">
+            <label for="size">и загрузить</label>
+            <input type="text" id="size" v-model:value="size">
+            <span>сообщений</span>
+            <input type="button" value="now!" @click="getMessages()">
+        </div>
+        <div class="messages">
+            <div class="message" v-for="message in messages" v-bind:class="{'my-message' : message.mine}">
+                <div class="icon"><img src="https://dummyimage.com/32x32/ff59b4" alt="icon" width="32" height="32"></div>
+                <div class="panel">
+                    <div class="username">[[ message.author_name ]]</div>
+                    <div class="message-text">[[ message.id ]]: [[ message.text ]]</div>
+                </div>
+            </div>
+        </div>
+        <div class="new-message">
+            <textarea name="new-message-text" id="new-message-text"></textarea>
+            <input type="button" value="Send" @click="newMessage">
+        </div>
+
+    </div>
+
+    <script>
+        let app = new Vue({
+            el: "#app",
+            delimiters: ['[[', ']]'],
+            data: {
+                dialog_id: 1,
+                lastid: -1,
+                size: 5,
+                messages: [],
+            },
+            methods: {
+                getMessages() {
+                    $.ajax({
+                        url: "/message/conversation-view",
+                        method: "GET",
+                        data: {
+                            id: $("#dialog-id").val(),
+                            offset: $("#lastid").val(),
+                            size: $("#size").val()
+                        },
+                        success(data) {
+                            console.log(data);
+                            data.forEach((item, indx)=> {app.messages.splice(indx, 0, item);});
+
+                            if (app.messages.length > 0) {
+                                app.lastid = app.messages[0]['id'];
+                            } else {
+                                app.lastid = -1;
+                            }
+                        },
+                        error(data) {
+                            console.warn(data.responseText);
+                        }
+                    });
+                },
+                newMessage() {
+                    $.ajax({
+                        url: "/message/new-message",
+                        method: "POST",
+                        data: {
+                            csrfmiddlewaretoken: $("input[name=csrfmiddlewaretoken]").val(),
+                            conversation: $("#dialog-id").val(),
+                            message: $("#new-message-text").val(),
+                        },
+                        success(data) {console.log(data);},
+                        error(data) {console.warn(data.responseText);}
+                    })
+                }
+            },
+        })
+    </script>
+</body>
+</html>

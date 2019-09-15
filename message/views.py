@@ -53,13 +53,17 @@ def demo(request):
 	return render(request, 'message/demo.html', params)
 
 
+def demo_gui(request):
+	return render(request, 'message/demo-gui.html')
+
+
 def new_conversation(request):
 	must_be = ["name", "members"]
 	for must in must_be:
 		if must not in request.POST:
 			return HttpResponse(f"There is no parameter {must} in POST request", status=500)
 
-	reg = re.compile("[a-zA-Zа-яА-Я0-9]+")
+	reg = re.compile("[a-zA-Zа-яА-Я0-9\s]+")
 	title = request.POST["name"]
 
 	checked = False
@@ -137,12 +141,19 @@ def conversation_view(request):
 		ConversationMember.objects.get(conversation=convers, user=request.user)
 		offset = int(request.GET["offset"])
 		size = int(request.GET["size"])
-		msgs = Message.objects.filter(
-			conversation=convers, owner=request.user, is_deleted=False).order_by("-id")
+
+		if offset == -1:
+			msgs = Message.objects.filter(
+				conversation=convers, owner=request.user, is_deleted=False).order_by("id")
+		else:
+			msgs = Message.objects.filter(
+				id__lt=offset,
+				conversation=convers, owner=request.user, is_deleted=False).order_by("id")
+
 		length = len(msgs)
-		start = min(length, offset)
-		stop = min(length-offset, offset+size)
-		msgs = msgs[start, stop]
+		start = max(length-size, 0)
+		stop = length
+		msgs = msgs[start : stop]
 	# такой беседы нет или пользователь не является её участником
 	except (ConversationMember.DoesNotExist, Conversation.DoesNotExist):
 		return HttpResponse(f"there is no conversation with id {request.GET['id']}", status=404)
@@ -155,7 +166,10 @@ def conversation_view(request):
 		"id": m.id,
 		"text": m.message,
 		"image": m.image,
-		"with-image": False if m.image == "" else True
+		"with-image": False if m.image == "" else True,
+		"author": m.author.id,
+		"author_name": m.owner.username,
+		"mine": False  # m.author.id == m.owner.id
 	} for m in msgs]
 
 	return JsonResponse(ans, safe=False)
@@ -177,6 +191,7 @@ def new_message(request):
 	members = ConversationMember.objects.filter(conversation=convers)
 	msgs = [Message(
 		owner=m.user,
+		author=request.user,
 		message=request.POST["message"],
 		conversation=convers) for m in members]
 	Message.objects.bulk_create(msgs)
