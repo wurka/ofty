@@ -54,12 +54,23 @@
         <label for="dialog-id">id диалога</label> <input type="text" id="dialog-id" :value="dialog_id">
         <br>
         <div class="fromto-panel">
-            <label for="lastid">у меня есть сообщение с id (-1 если нет ниодного)</label>
-            <input type="text" id="lastid" v-model:value="lastid">
-            <label for="size">и загрузить</label>
-            <input type="text" id="size" v-model:value="size">
-            <span>сообщений</span>
-            <input type="button" value="now!" @click="getMessages()">
+            <div>
+                <span>Загрузить сообщения (не больше </span>
+                <input type="text" v-model:value="ga_size" id="ga_size">
+                <span>шт.) после сообщения с id</span>
+                <input type="text" v-model:value="ga_message" id="ga_message">
+                <input type="button" value="get after" style="width: auto" @click="getAfter()">
+            </div>
+            <div>
+                <label for="lastid">Загрузить сообщения (не более </label>
+                <input type="text" id="gb_size" v-model:value="gb_size">
+                <span>шт. ) перед сообщением с id </span>
+                <input type="text" id="gb_message" v-model:value="gb_message">
+                <input type="button" value="get before" @click="getBefore()" style="width: auto;">
+            </div>
+        </div>
+        <div>
+            <input type="button" value="Загрузить ещё сообщений" @click="getBefore()">
         </div>
         <div class="messages">
             <div class="message" v-for="message in messages" v-bind:class="{'my-message' : message.mine}">
@@ -86,6 +97,39 @@
                 lastid: -1,
                 size: 5,
                 messages: [],
+                gb_size: 1,
+                gb_message: -1,
+                ga_size: 1,
+                ga_message: -1,
+                refresher_timeout_id: 0,
+                getBeforePromise: new Promise((result, error)=>{
+                    console.log($("#gb_message").val());
+                    $.ajax({
+                        url: "/message/get-before",
+                        method: "GET",
+                        data: {
+                            conversation: $("#dialog-id").val(),
+                            beforeid: $("#gb_message").val(),
+                            size: $("#gb_size").val()
+                        },
+                        success(data) {
+                            console.log(data);
+                            data.forEach((item, indx)=> {app.messages.splice(indx, 0, item);});
+
+                            if (app.messages.length > 0) {
+                                app.lastid = app.messages[0]['id'];
+                            } else {
+                                app.lastid = -1;
+                            }
+                        },
+                        error(data) {
+                            console.warn(data.responseText);
+                        }
+                    })
+                }),
+                getAfterPromise: new Promise((result, error)=>{
+
+                })
             },
             methods: {
                 getMessages() {
@@ -111,6 +155,68 @@
                             console.warn(data.responseText);
                         }
                     });
+                },
+                getBefore() {
+                    console.log($("#gb_message").val());
+                    $.ajax({
+                        url: "/message/get-before",
+                        method: "GET",
+                        data: {
+                            conversation: $("#dialog-id").val(),
+                            beforeid: $("#gb_message").val(),
+                            size: $("#gb_size").val()
+                        },
+                        success(data) {
+                            console.log(data);
+                            data.forEach((item, indx)=> {app.messages.splice(indx, 0, item);});
+
+                            if (app.messages.length > 0) {
+                                app.lastid = app.messages[0]['id'];
+                            } else {
+                                app.lastid = -1;
+                            }
+                        },
+                        error(data) {
+                            console.warn(data.responseText);
+                        }
+                    })
+                },
+                getAfter() {
+                    $.ajax({
+                        url: "/message/get-after",
+                        method: "GET",
+                        data: {
+                            conversation: $("#dialog-id").val(),
+                            afterid: $("#ga_message").val(),
+                            size: $("#ga_size").val()
+                        },
+                        success(data) {
+                            console.log(data);
+                            data.forEach((item)=> {app.messages.push(item);});
+
+                            if (app.messages.length > 0) {
+                                app.lastid = app.messages[0]['id'];
+                            } else {
+                                app.lastid = -1;
+                            }
+                        },
+                        error(data) {
+                            console.warn(data.responseText);
+                        }
+                    })
+                },
+                refresh() {
+                    clearTimeout(app.refresher_timeout_id);
+                    setTimeout(()=>{app.getAfterPromise.then(
+                        result => {/*установить значения переменных*/ app.refresh()},
+                        error => {app.refresh();}
+                    )}, 1000)
+                },
+                initRefresher() {
+                    getBeforePromise.then(
+                        result => { app.refresh(); },
+                        error => { alert("Не удалось запустить механизм получения сообщений!"); console.warn(error);}
+                    )
                 },
                 newMessage() {
                     $.ajax({

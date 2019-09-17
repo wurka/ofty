@@ -129,6 +129,93 @@ def my_conversations(request):
 
 
 @logged
+@get_with_parameters("conversation", "beforeid", "size")
+def get_before(request):
+	"""получить сообщения из беседы [id]. все они будут предшествовать сообщению с id==[offset].
+	количество сообщений - size
+	ПРИМЕЧАНИЕ: если offset == -1 => вернутся последние сообщения из диалога
+	"""
+
+	try:
+		convers = Conversation.objects.get(id=int(request.GET['conversation']))
+		ConversationMember.objects.get(conversation=convers, user=request.user)
+		offset = int(request.GET["beforeid"])
+		size = int(request.GET["size"])
+
+		if offset == -1:
+			msgs = Message.objects.filter(
+				conversation=convers, owner=request.user, is_deleted=False).order_by("id")
+		else:
+			msgs = Message.objects.filter(
+				id__lt=offset,
+				conversation=convers, owner=request.user, is_deleted=False).order_by("id")
+
+		length = len(msgs)
+		start = max(length - size, 0)
+		stop = length
+		msgs = msgs[start: stop]
+	# такой беседы нет или пользователь не является её участником
+	except (ConversationMember.DoesNotExist, Conversation.DoesNotExist):
+		return HttpResponse(f"there is no conversation with id {request.GET['id']}", status=404)
+	except ValueError:
+		return HttpResponse("conversation, size and offset must be valid integers", status=500)
+	except Exception as e:
+		print(e)
+
+	ans = [{
+		"id": m.id,
+		"text": m.message,
+		"image": m.image,
+		"with-image": False if m.image == "" else True,
+		"author": m.author.id,
+		"author_name": m.owner.username,
+		"mine": False  # m.author.id == m.owner.id
+	} for m in msgs]
+
+	return JsonResponse(ans, safe=False)
+
+
+@logged
+@get_with_parameters("conversation", "afterid", "size")
+def get_after(request):
+	"""
+	Запрос сообщений из беседы [conversation], после сообщения [afterid]. Максимальное количество - size
+	:return: json массив
+	"""
+	try:
+		convers = Conversation.objects.get(id=int(request.GET['conversation']))
+		ConversationMember.objects.get(conversation=convers, user=request.user)
+		afterid = int(request.GET["afterid"])
+		size = int(request.GET["size"])
+
+		msgs = Message.objects.filter(
+			id__gt=afterid,
+			conversation=convers, owner=request.user, is_deleted=False).order_by("id")
+
+		length = len(msgs)
+		msgs = msgs[0:min(size, length)]
+	# такой беседы нет или пользователь не является её участником
+	except (ConversationMember.DoesNotExist, Conversation.DoesNotExist):
+		return HttpResponse(f"there is no conversation with id {request.GET['id']}", status=404)
+	except ValueError:
+		return HttpResponse("conversation, size and afterid must be valid integers", status=500)
+	except Exception as e:
+		print(e)
+
+	ans = [{
+		"id": m.id,
+		"text": m.message,
+		"image": m.image,
+		"with-image": False if m.image == "" else True,
+		"author": m.author.id,
+		"author_name": m.owner.username,
+		"mine": False  # m.author.id == m.owner.id
+	} for m in msgs]
+
+	return JsonResponse(ans, safe=False)
+
+
+@logged
 @get_with_parameters("id", "offset", "size")
 def conversation_view(request):
 	"""
