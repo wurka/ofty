@@ -51,7 +51,7 @@
 <body>
     {% csrf_token %}
     <div class="layout" style="width: 800px; margin: auto;" id="app" >
-        <label for="dialog-id">id диалога</label> <input type="text" id="dialog-id" :value="dialog_id">
+        <label for="dialog-id">id диалога</label> <input type="text" id="dialog-id" v-model:value="dialog_id">
         <br>
         <div class="fromto-panel">
             <div>
@@ -70,7 +70,7 @@
             </div>
         </div>
         <div>
-            <input type="button" value="Загрузить ещё сообщений" @click="getBefore()">
+            <input type="button" value="Загрузить ещё сообщений" @click="loadMore()">
         </div>
         <div class="messages">
             <div class="message" v-for="message in messages" v-bind:class="{'my-message' : message.mine}">
@@ -85,6 +85,7 @@
             <textarea name="new-message-text" id="new-message-text"></textarea>
             <input type="button" value="Send" @click="newMessage">
         </div>
+
 
     </div>
 
@@ -102,8 +103,38 @@
                 ga_size: 1,
                 ga_message: -1,
                 refresher_timeout_id: 0,
-                getBeforePromise: new Promise((result, error)=>{
+                allow_refresh: true,
+            },
+            methods: {
+                sendNotification(title, options) {
+                    let notification = undefined;
+                    if (!("Notification" in window)) {
+                        console.warn("browser does not support notifications");
+                    } else if (Notification.permission === "granted") {
+                        notification = new Notification(title, options);
+                    } else if (Notification.permission !== 'denied') {
+                        Notification.requestPermission(permission => {
+                            if (permission === 'granted') {
+                                notification = new Notification(title, options);
+                            } else {
+                                // пользователь отклонил запрос на отправку сообщений
+                                console.log("user denied request on notifications");
+                            }
+                        })
+                    } else {
+                        // пользователь давно отказал в показе сообщений
+                        console.log("messages are denied by user policy");
+                    }
+
+                    if (notification !== undefined) {
+                        notification.onclick = ()=> {window.focus(); notification.close(); };
+                    }
+                },
+                getBeforePromise() {return new Promise((success, fail)=>{
+                    console.log("promise");
+                    console.log($("#dialog-id").val());
                     console.log($("#gb_message").val());
+                    console.log($("#gb_size").val());
                     $.ajax({
                         url: "/message/get-before",
                         method: "GET",
@@ -121,17 +152,60 @@
                             } else {
                                 app.lastid = -1;
                             }
+                            success(data)
                         },
                         error(data) {
                             console.warn(data.responseText);
+                            fail(data.responseText);
                         }
                     })
-                }),
-                getAfterPromise: new Promise((result, error)=>{
+                    })
+                },
+                getAfterPromise() {
+                    return new Promise((done, fail)=>{
+                        console.log('run get-after promise');
+                        if (app.allow_refresh === false) {
+                            done("allow_refresh === false. do nothing.");
+                        }
+                        $.ajax({
+                            url: "/message/get-after",
+                            method: "GET",
+                            data: {
+                                conversation: $("#dialog-id").val(),
+                                afterid: $("#ga_message").val(),
+                                size: $("#ga_size").val()
+                            },
+                            success(data) {
+                                console.log(data);
+                                data.forEach((item)=> {app.messages.push(item);});
 
-                })
-            },
-            methods: {
+                                if (app.messages.length > 0) {
+                                    app.lastid = app.messages[0]['id'];
+                                } else {
+                                    app.lastid = -1;
+                                }
+
+                                // прокрутка поля с сообщениями вниз
+                                // и показ notification соощения
+                                window.requestAnimationFrame(()=>{
+                                    if (data.length > 0) {
+                                        let div = $(".messages");
+                                        div.scrollTop(div.prop('scrollHeight'));
+
+                                        //notification
+                                        app.sendNotification('Ofty', {body: 'У вас есть новые сообщения.', icon: 'favicon.svg', dir: 'ltr'})
+                                    }
+                                });
+
+                                done(data);
+                            },
+                            error(data) {
+                                console.warn(data.responseText);
+                                fail(data.responseText);
+                            }
+                        })
+                    })
+                },
                 getMessages() {
                     $.ajax({
                         url: "/message/conversation-view",
@@ -155,6 +229,12 @@
                             console.warn(data.responseText);
                         }
                     });
+                },
+                loadMore() {
+                    app.getBeforePromise().then(
+                        () => {app.gb_message = app.messages[0].length === 0 ? -1 : app.messages[0].id},
+                        () => {console.log(2)}
+                    )
                 },
                 getBefore() {
                     console.log($("#gb_message").val());
@@ -206,15 +286,24 @@
                     })
                 },
                 refresh() {
+                    /* запланировать обновление сообщений */
                     clearTimeout(app.refresher_timeout_id);
-                    setTimeout(()=>{app.getAfterPromise.then(
-                        result => {/*установить значения переменных*/ app.refresh()},
+                    setTimeout(()=>{app.getAfterPromise().then(
+                        result => {
+                            app.ga_message = app.messages.length === 0 ? -1 : app.messages[app.messages.length - 1].id;
+                            app.refresh()
+                        },
                         error => {app.refresh();}
                     )}, 1000)
                 },
                 initRefresher() {
-                    getBeforePromise.then(
-                        result => { app.refresh(); },
+                    console.log('initRefresher');
+                    app.getBeforePromise().then(
+                        success => {
+                            app.ga_message = app.messages.length === 0 ? -1 : app.messages[app.messages.length - 1].id;
+                            app.gb_message = app.messages.length === 0 ? -1 : app.messages[0].id;
+                            app.refresh();
+                        },
                         error => { alert("Не удалось запустить механизм получения сообщений!"); console.warn(error);}
                     )
                 },
@@ -233,6 +322,11 @@
                 }
             },
         })
+    </script>
+    <script>
+        $(document).ready(()=>{
+            app.initRefresher();
+        });
     </script>
 </body>
 </html>

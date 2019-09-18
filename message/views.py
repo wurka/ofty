@@ -158,7 +158,7 @@ def get_before(request):
 	except (ConversationMember.DoesNotExist, Conversation.DoesNotExist):
 		return HttpResponse(f"there is no conversation with id {request.GET['id']}", status=404)
 	except ValueError:
-		return HttpResponse("conversation, size and offset must be valid integers", status=500)
+		return HttpResponse("conversation, size and beforeid must be valid integers", status=500)
 	except Exception as e:
 		print(e)
 
@@ -168,8 +168,8 @@ def get_before(request):
 		"image": m.image,
 		"with-image": False if m.image == "" else True,
 		"author": m.author.id,
-		"author_name": m.owner.username,
-		"mine": False  # m.author.id == m.owner.id
+		"author_name": m.author.username,
+		"mine": m.author.id == m.owner.id
 	} for m in msgs]
 
 	return JsonResponse(ans, safe=False)
@@ -208,8 +208,8 @@ def get_after(request):
 		"image": m.image,
 		"with-image": False if m.image == "" else True,
 		"author": m.author.id,
-		"author_name": m.owner.username,
-		"mine": False  # m.author.id == m.owner.id
+		"author_name": m.author.username,
+		"mine": m.author.id == m.owner.id
 	} for m in msgs]
 
 	return JsonResponse(ans, safe=False)
@@ -255,7 +255,7 @@ def conversation_view(request):
 		"image": m.image,
 		"with-image": False if m.image == "" else True,
 		"author": m.author.id,
-		"author_name": m.owner.username,
+		"author_name": m.author.username,
 		"mine": False  # m.author.id == m.owner.id
 	} for m in msgs]
 
