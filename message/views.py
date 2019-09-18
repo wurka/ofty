@@ -196,7 +196,7 @@ def get_after(request):
 		msgs = msgs[0:min(size, length)]
 	# такой беседы нет или пользователь не является её участником
 	except (ConversationMember.DoesNotExist, Conversation.DoesNotExist):
-		return HttpResponse(f"there is no conversation with id {request.GET['id']}", status=404)
+		return HttpResponse(f"there is no conversation with id {request.GET['conversation']}", status=404)
 	except ValueError:
 		return HttpResponse("conversation, size and afterid must be valid integers", status=500)
 	except Exception as e:

@@ -53,6 +53,9 @@
     <div class="layout" style="width: 800px; margin: auto;" id="app" >
         <label for="dialog-id">id диалога</label> <input type="text" id="dialog-id" v-model:value="dialog_id">
         <br>
+        <div>
+            <input type="button" value="debug" @click="debug">
+        </div>
         <div class="fromto-panel">
             <div>
                 <span>Загрузить сообщения (не больше </span>
@@ -106,6 +109,54 @@
                 allow_refresh: true,
             },
             methods: {
+                debug() {
+                    if (window.Worker) {
+                        let refresherWorker = new Worker("/static/js/message/refresher.js");
+                        refresherWorker.postMessage({
+                            "size": app.ga_size,
+                            "conversation": app.dialog_id,
+                            "lastid": app.ga_message
+                        });
+                        refresherWorker.postMessage("start");
+
+                        refresherWorker.onmessage = (data) => {
+                            // полученны данные. преобразуем их в сообщения
+                            JSON.parse(data.data).forEach((item)=> {app.messages.push(item);});
+
+                            //говорим о том, какое сообщение теперь последние worker-у
+                            if (app.messages.length > 0) {
+                                app.ga_message = app.messages[app.messages.length-1]['id'];
+                                refresherWorker.postMessage({"lastid": app.ga_message})
+                            } else {
+                                app.ga_message = -1;
+                                refresherWorker.postMessage({"lastid": app.ga_message})
+                            }
+
+
+                            // и продолжаем получение сообщений
+                            refresherWorker.postMessage("start");
+
+                            // Настраиваем дальнейший приём сообщений
+                            if (app.messages.length > 0) {
+                                app.lastid = app.messages[0]['id'];
+                            } else {
+                                app.lastid = -1;
+                            }
+
+                            // прокрутка поля с сообщениями вниз
+                            // и показ notification соощения
+                            window.requestAnimationFrame(()=>{
+                                if (JSON.parse(data.data).length > 0) {
+                                    let div = $(".messages");
+                                    div.scrollTop(div.prop('scrollHeight'));
+
+                                    //notification
+                                    app.sendNotification('Ofty', {body: 'У вас есть новые сообщения.', icon: 'favicon.svg', dir: 'ltr'})
+                                }
+                            });
+                        }
+                    }
+                },
                 sendNotification(title, options) {
                     let notification = undefined;
                     if (!("Notification" in window)) {
@@ -232,7 +283,10 @@
                 },
                 loadMore() {
                     app.getBeforePromise().then(
-                        () => {app.gb_message = app.messages[0].length === 0 ? -1 : app.messages[0].id},
+                        () => {
+                            app.gb_message = app.messages[0].length === 0 ? -1 : app.messages[0].id;
+                            app.ga_message = app.gb_message;
+                        },
                         () => {console.log(2)}
                     )
                 },
@@ -325,7 +379,7 @@
     </script>
     <script>
         $(document).ready(()=>{
-            app.initRefresher();
+            //app.initRefresher();
         });
     </script>
 </body>
