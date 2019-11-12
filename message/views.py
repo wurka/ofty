@@ -123,7 +123,18 @@ def my_conversations(request):
 	for m in me:
 		ans.append({
 			"id": m.conversation.id,
-			"title": m.conversation.title
+			"title": m.conversation.title,
+			"photo": "",  # TODO: photo иконка беседы
+			"users": [
+				{
+					"id": "",
+					"name": "",
+					"photo": ""
+				}
+			],
+			"mute": True,  # TODO: ignore dialog
+			"flag": True,  # TODO: metka vazhnosti dialoga
+			"active": True,  # TODO: активный ли диалог (ты в нём)
 		})
 	return JsonResponse(ans, safe=False)
 
@@ -156,7 +167,7 @@ def get_before(request):
 		msgs = msgs[start: stop]
 	# такой беседы нет или пользователь не является её участником
 	except (ConversationMember.DoesNotExist, Conversation.DoesNotExist):
-		return HttpResponse(f"there is no conversation with id {request.GET['id']}", status=404)
+		return HttpResponse(f"there is no conversation with id {request.GET['conversation']}", status=404)
 	except ValueError:
 		return HttpResponse("conversation, size and beforeid must be valid integers", status=500)
 	except Exception as e:
@@ -169,7 +180,11 @@ def get_before(request):
 		"with-image": False if m.image == "" else True,
 		"author": m.author.id,
 		"author_name": m.author.username,
-		"mine": m.author.id == m.owner.id
+		"mine": m.author.id == m.owner.id,
+		"sent": True,  # TODO: сообщение отправлено
+		"datetime": "",  # TODO: дата сообщения
+		"type": "",  # TODO: message/date (plashka dlia daty)
+		"read": "",  # TODO: message has been read
 	} for m in msgs]
 
 	return JsonResponse(ans, safe=False)
@@ -209,7 +224,11 @@ def get_after(request):
 		"with-image": False if m.image == "" else True,
 		"author": m.author.id,
 		"author_name": m.author.username,
-		"mine": m.author.id == m.owner.id
+		"mine": m.author.id == m.owner.id,
+		"sent": True,  # TODO: сообщение отправлено
+		"datetime": "",  # TODO: дата сообщения
+		"type": "",  # TODO: message/date (plashka dlia daty)
+		"read": "",  # TODO: message has been read
 	} for m in msgs]
 
 	return JsonResponse(ans, safe=False)

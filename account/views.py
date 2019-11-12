@@ -379,3 +379,55 @@ def about_me(request):
 			return HttpResponse("its strange, but threre is no such OftyUser", status=500)
 
 	return JsonResponse(ans)
+
+
+def get_settings(request):
+	ans = {
+		"avatar": "http://...png",
+		"company": {
+			"info": {
+				"name": "",
+				"site": "",
+				"city": "",
+				"mail": "",
+				"phone": "",
+				"phone2": "",
+				"description": ""
+			},
+			"workTime": [
+				{
+					"rest": True,  # выходной ли
+					"start": "",  # время начала работы
+					"fin": "",  # время окончания работы
+				} for i in range(7)  # на каждый день недели
+			],
+			"notification": {
+				"push": True,
+				"sound": True,
+				"orderSms": True,
+				"timeSms": True,
+				"orderMail": True,
+				"timeMail": True
+			},
+			"blackList": [
+				{
+					"id": "",
+					"name": ""
+				} for i in range(10)
+			],
+			"rent": {
+				"address": "",  # адрес склада
+				"metro": "",  # ближайшая станция метро
+				"description": "",  # описание
+				"delivery": [
+					{
+						"id": "",
+						"name": "",  # наименование доставки
+						"cost": 0  # цена
+					}
+				]
+			}
+		}
+	}
+
+	return JsonResponse(ans)

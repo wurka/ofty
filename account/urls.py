@@ -13,8 +13,14 @@ urlpatterns = [
 	path('time-set', views.time_set),
 	path('time-get', views.time_get),
 	path('new-account', views.new_account),
-	path('save-avatar', views.save_avatar),
 	path('alerts-set', views.alerts_set),
 	path('alerts-get', views.alerts_get),
-	path('about-me', views.about_me)
+	path('about-me', views.about_me),
+	path('get-settings', views.get_settings),
+	path('save-avatar', views.save_avatar),
+	path('save-info', views.save_info),
+	path('save-work-time', views.save_work_time),
+	path('save-notification', views.save_notification),
+	path('save-blacklist', views.save_blacklist),
+	path('save-rent', views.save_rent),
 ]
