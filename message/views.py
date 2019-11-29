@@ -5,6 +5,7 @@ import json
 from django.contrib.auth.models import User
 from .models import Conversation, ConversationMember, Message
 from django.http import JsonResponse
+from datetime import datetime
 
 # Create your views here.
 def logged(method):
@@ -121,20 +122,21 @@ def my_conversations(request):
 	me = ConversationMember.objects.filter(user=request.user)
 	ans = list()
 	for m in me:
+		members = ConversationMember.objects.filter(conversation=m.conversation, abandoned=False)
+
 		ans.append({
 			"id": m.conversation.id,
 			"title": m.conversation.title,
-			"photo": "",  # TODO: photo иконка беседы
+			"photo": Conversation.get_icon_url(m.conversation.icon),
 			"users": [
 				{
-					"id": "",
-					"name": "",
-					"photo": ""
-				}
-			],
-			"mute": True,  # TODO: ignore dialog
-			"flag": True,  # TODO: metka vazhnosti dialoga
-			"active": True,  # TODO: активный ли диалог (ты в нём)
+					"id": member.user.id,
+					"name": member.user.username,
+					"photo": f"/static/user_{member.user.id}/avatar-71.png"
+				} for member in members],
+			"mute": m.muted,
+			"flag": m.is_important,
+			"active": not m.abandoned,
 		})
 	return JsonResponse(ans, safe=False)
 
@@ -172,6 +174,7 @@ def get_before(request):
 		return HttpResponse("conversation, size and beforeid must be valid integers", status=500)
 	except Exception as e:
 		print(e)
+		return HttpResponse(f"Unexpected error: {str(e)}", status=500)
 
 	ans = [{
 		"id": m.id,
@@ -181,10 +184,17 @@ def get_before(request):
 		"author": m.author.id,
 		"author_name": m.author.username,
 		"mine": m.author.id == m.owner.id,
-		"sent": True,  # TODO: сообщение отправлено
-		"datetime": "",  # TODO: дата сообщения
-		"type": "",  # TODO: message/date (plashka dlia daty)
-		"read": "",  # TODO: message has been read
+		"sent": m.sended,
+		"datetime": {
+			"year": m.creation_time.year,
+			"month": m.creation_time.month,
+			"day": m.creation_time.day,
+			"hour": m.creation_time.hour,
+			"minute": m.creation_time.minute,
+			"second": m.creation_time.second
+		},
+		"type": m.message_type,  # message/date
+		"read": m.read,
 	} for m in msgs]
 
 	return JsonResponse(ans, safe=False)
@@ -216,6 +226,7 @@ def get_after(request):
 		return HttpResponse("conversation, size and afterid must be valid integers", status=500)
 	except Exception as e:
 		print(e)
+		return HttpResponse(f"Unexpected error: {str(e)}", status=500)
 
 	ans = [{
 		"id": m.id,
@@ -225,10 +236,17 @@ def get_after(request):
 		"author": m.author.id,
 		"author_name": m.author.username,
 		"mine": m.author.id == m.owner.id,
-		"sent": True,  # TODO: сообщение отправлено
-		"datetime": "",  # TODO: дата сообщения
-		"type": "",  # TODO: message/date (plashka dlia daty)
-		"read": "",  # TODO: message has been read
+		"sent": m.sent,
+		"datetime": {
+			"year": m.creation_time.year,
+			"month": m.creation_time.month,
+			"day": m.creation_time.day,
+			"hour": m.creation_time.hour,
+			"minute": m.creation_time.minute,
+			"second": m.creation_time.second
+		},
+		"type": m.message_type,
+		"read": m.read,
 	} for m in msgs]
 
 	return JsonResponse(ans, safe=False)
@@ -294,12 +312,13 @@ def new_message(request):
 		return HttpResponse(f"conversation must be valid integer, not {value}", status=500)
 
 	# все учавствующие в беседе
-	members = ConversationMember.objects.filter(conversation=convers)
+	members = ConversationMember.objects.filter(conversation=convers, abandoned=False)
 	msgs = [Message(
 		owner=m.user,
 		author=request.user,
 		message=request.POST["message"],
-		conversation=convers) for m in members]
+		conversation=convers,
+		creation_time=datetime.now()) for m in members]
 	Message.objects.bulk_create(msgs)
 
 	return HttpResponse("OK")
