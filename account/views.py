@@ -382,8 +382,12 @@ def about_me(request):
 
 
 def get_settings(request):
+	django_user = request.user
+	uid = django_user.id
+	ofty_user = OftyUser.objects.get(user=django_user)
+
 	ans = {
-		"avatar": "http://...png",
+		"avatar": request.build_absolute_uri(f"/static/user_{uid}/avatar-170.png"),
 		"company": {
 			"info": {
 				"name": "",

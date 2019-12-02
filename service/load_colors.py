@@ -1,7 +1,6 @@
 # to run this script do:
 # python3 manage.py shell
-# >> exec(open('units/service/load_colors.py', encoding='utf8').read())
-
+# >> exec(open('service/load_colors.py', encoding='utf8').read())
 from units.models import Color
 
 print("LOAD COLORS: this script will delete and recreate ALL data about colors presets (Unit.Color). Continue? (y/n)?")

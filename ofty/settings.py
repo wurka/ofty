@@ -35,6 +35,8 @@ INSTALLED_APPS = [
 	'message',
 	'shared',
 	'ofty',
+	'location',
+	'service',
 	'account',
 	'django.contrib.sitemaps',
 	'django.contrib.admin',

@@ -1,6 +1,6 @@
 # to run this script do:
 # python3 manage.py shell
-# >> exec(open('units/service/load_groups.py', encoding='utf8').read())
+# >> exec(open('service/load_groups.py', encoding='utf8').read())
 
 from units.models import Group, GroupParameter
 

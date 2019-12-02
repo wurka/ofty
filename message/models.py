@@ -16,7 +16,7 @@ class Conversation(models.Model):
 class ConversationMember(models.Model):
 	user = models.ForeignKey(User, on_delete=models.CASCADE)
 	conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
-	muted = models.ForeignKey(default=False)  # заглушить информирование о новых сообщениях в этой беседе
+	muted = models.BooleanField(default=False)  # заглушить информирование о новых сообщениях в этой беседе
 	is_important = models.BooleanField(default=False)  # диалог помечен как важный для этого пользователя
 	abandoned = models.BooleanField(default=False)  # из этого диалога пользователь ушёл
 

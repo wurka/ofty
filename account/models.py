@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from location.models import City
 
 
 # Create your models here.
@@ -22,6 +23,14 @@ class OftyUserRentLord(models.Model):
 	sklad = models.TextField(default="")  # адрес склада
 	metro = models.TextField(default="")  # ближайшая станция метро
 	commentary = models.TextField(default="")  # комментарий про аренду
+
+	name = models.TextField(default="")  # название кампании
+	site = models.URLField(default="")  # адрес сайта
+	city = models.ForeignKey(City, on_delete=models.CASCADE)
+	email = models.EmailField(default="")
+	phone = models.TextField(default="02")
+	phone2 = models.TextField(default="03")
+	description = models.TextField(default="")  # описание компании
 
 	# время работы "сдавателя", понедельник - воскресенье
 	mon_enable = models.BooleanField(default=True)
