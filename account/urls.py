@@ -18,10 +18,9 @@ urlpatterns = [
 	path('about-me', views.about_me),
 	path('get-settings', views.get_settings),
 	path('save-avatar', views.save_avatar),
-	#  TODO: make it real
-	# path('save-info', views.save_info),
-	# path('save-work-time', views.save_work_time),
-	# path('save-notification', views.save_notification),
-	# path('save-blacklist', views.save_blacklist),
-	# path('save-rent', views.save_rent),
+	path('save-info', views.save_info),
+	path('save-work-time', views.save_work_time),
+	path('save-notification', views.save_notification),
+	path('save-blacklist', views.save_blacklist),
+	path('save-rent', views.save_rent),
 ]

@@ -13,3 +13,7 @@
 /message/__pycache__/*.pyc
 /message/migrations/__pycache__/*.pyc
 /message/migrations
+/location/migrations/__pycache__/*.pyc
+/location/__pycache__/*.pyc
+/service/__pycache__/*.pyc
+/service/migrations/__pycache__/*.pyc

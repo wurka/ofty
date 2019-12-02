@@ -6,32 +6,30 @@ from location.models import City
 # Create your models here.
 class OftyUser(models.Model):
 	user = models.ForeignKey(User, on_delete=models.CASCADE)
+	nickname = models.TextField(default="")  # псевдоним пользователя (подпись соощений и т.п.)
 	badass = models.BooleanField(default=False)  # подозрительный пользователь (чмо)
-	enable_push = models.BooleanField(default=True)  # мгновенные уведомления
-	enable_sound_alert = models.BooleanField(default=True)  # звуковые оповещения
-	enable_sms_new_order = models.BooleanField(default=True)  # sms о новом заказе
-	enable_sms_startstop = models.BooleanField(default=True)  # sms о начале/конце аренды
-	enable_email_new_order = models.BooleanField(default=True)  # сообщение о новом заказе
-	enable_email_startstop = models.BooleanField(default=True)  # сообщение о начале/конце аренды
+	enable_push = models.BooleanField(default=False)  # мгновенные уведомления
+	enable_sound_alert = models.BooleanField(default=False)  # звуковые оповещения
+	enable_sms_new_order = models.BooleanField(default=False)  # sms о новом заказе
+	enable_sms_startstop = models.BooleanField(default=False)  # sms о начале/конце аренды
+	enable_email_new_order = models.BooleanField(default=False)  # сообщение о новом заказе
+	enable_email_startstop = models.BooleanField(default=False)  # сообщение о начале/конце аренды
 	is_deleted = models.BooleanField(default=False)  # пользователь удалён
 	stock_size = models.IntegerField(default=10)  # рамер склада
 	money = models.FloatField(default=0)  # кредитов
-
-
-class OftyUserRentLord(models.Model):
-	user = models.ForeignKey(User, on_delete=models.CASCADE)
 	sklad = models.TextField(default="")  # адрес склада
 	metro = models.TextField(default="")  # ближайшая станция метро
-	commentary = models.TextField(default="")  # комментарий про аренду
-
-	name = models.TextField(default="")  # название кампании
+	rent_commentary = models.TextField(default="")  # комментарий про аренду
 	site = models.URLField(default="")  # адрес сайта
-	city = models.ForeignKey(City, on_delete=models.CASCADE)
+	city = models.ForeignKey(City, on_delete=models.CASCADE, blank=True, null=True)
 	email = models.EmailField(default="")
-	phone = models.TextField(default="02")
-	phone2 = models.TextField(default="03")
-	description = models.TextField(default="")  # описание компании
+	phone = models.TextField(default="")
+	phone2 = models.TextField(default="")
+	company_description = models.TextField(default="")  # описание компании
 
+
+class OftyUserWorkTime(models.Model):
+	user = models.ForeignKey(User, on_delete=models.CASCADE)
 	# время работы "сдавателя", понедельник - воскресенье
 	mon_enable = models.BooleanField(default=True)
 	mon_start_h = models.IntegerField(default=9)
@@ -75,3 +73,8 @@ class DeliveryCase(models.Model):
 	name = models.TextField(default="")  # название метода доставки
 	value = models.FloatField(default=0)  # стоимость доставки этим методом
 	is_deleted = models.BooleanField(default=False)  # признак удаления
+
+
+class BlackListInstance(models.Model):
+	owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="owner")  # хозяин черного списка
+	target = models.ForeignKey(User, on_delete=models.CASCADE, related_name="target")  # тот, кто находится в чёрном списке

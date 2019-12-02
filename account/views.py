@@ -2,7 +2,7 @@ from django.shortcuts import render, HttpResponse
 from django.http import JsonResponse
 from django.contrib.auth import authenticate, login as django_login, logout as django_logout
 from django.contrib.auth.models import User
-from account.models import OftyUser, OftyUserRentLord, DeliveryCase
+from account.models import OftyUser, OftyUserWorkTime, DeliveryCase, BlackListInstance
 from units.models import Unit
 import json
 from PIL import Image
@@ -28,6 +28,19 @@ def logged(method):
 			return HttpResponse("you must be loggined in", status=401)
 		return method(request)
 	return inner
+
+
+def post_with_parameters(*args):
+	def decor(method):
+		def response(request):
+			if request.method != "POST":
+				return HttpResponse(f"please use POST request, not {request.method}", status=500)
+			for param in args:
+				if param not in request.POST:
+					return HttpResponse(f"there is no parameter {param}", status=500)
+			return method(request)
+		return response
+	return decor
 
 
 def login(request):
@@ -381,57 +394,247 @@ def about_me(request):
 	return JsonResponse(ans)
 
 
+@logged
 def get_settings(request):
 	django_user = request.user
 	uid = django_user.id
 	ofty_user = OftyUser.objects.get(user=django_user)
+	try:
+		wt = OftyUserWorkTime.objects.get(user=django_user)
+	except OftyUserWorkTime.DoesNotExist:
+		wt = OftyUserWorkTime(user=django_user)
+		wt.save()
+	bad_guys = BlackListInstance.objects.filter(owner=django_user)
+	delivery_cases = DeliveryCase.objects.filter(user=django_user, is_deleted=False)
 
 	ans = {
-		"avatar": request.build_absolute_uri(f"/static/user_{uid}/avatar-170.png"),
+		"avatar": {
+			"big": request.build_absolute_uri(f"/static/user_{uid}/avatar-170.png"),
+			"small": request.build_absolute_uri(f"/static/user_{uid}/avatar-71.png"),
+		},
 		"company": {
 			"info": {
-				"name": "",
-				"site": "",
-				"city": "",
-				"mail": "",
-				"phone": "",
-				"phone2": "",
-				"description": ""
+				"name": ofty_user.nickname,
+				"site": ofty_user.site,
+				"city": ofty_user.city.name if ofty_user.city is not None else "",
+				"mail": ofty_user.email,
+				"phone": ofty_user.phone,
+				"phone2": ofty_user.phone2,
+				"description": ofty_user.company_description
 			},
-			"workTime": [
-				{
-					"rest": True,  # выходной ли
-					"start": "",  # время начала работы
-					"fin": "",  # время окончания работы
-				} for i in range(7)  # на каждый день недели
-			],
+			"workTime": {
+				"mon": {
+					"rest": not wt.mon_enable,  # выходной ли
+					"start-h": wt.mon_start_h,  # время начала работы
+					"start-m": wt.mon_start_m,  # время начала работы
+					"fin-h": wt.mon_stop_h,  # время окончания работы
+					"fin-m": wt.mon_stop_m,  # время окончания работы
+				},
+				"tue": {
+					"rest": not wt.tue_enable,
+					"start-h": wt.tue_start_h,
+					"start-m": wt.tue_start_m,
+					"fin-h": wt.tue_stop_h,
+					"fin-m": wt.tue_stop_m,
+				},
+				"wed": {
+					"rest": not wt.wed_enable,
+					"start-h": wt.wed_start_h,
+					"start-m": wt.wed_start_m,
+					"fin-h": wt.wed_stop_h,
+					"fin-m": wt.wed_stop_m,
+				},
+				"thu": {
+					"rest": not wt.thu_enable,
+					"start-h": wt.thu_start_h,
+					"start-m": wt.thu_start_m,
+					"fin-h": wt.thu_stop_h,
+					"fin-m": wt.thu_stop_m,
+				},
+				"fri": {
+					"rest": not wt.fri_enable,
+					"start-h": wt.fri_start_h,
+					"start-m": wt.fri_start_m,
+					"fin-h": wt.fri_stop_h,
+					"fin-m": wt.fri_stop_m,
+				},
+				"sat": {
+					"rest": not wt.sat_enable,
+					"start-h": wt.sat_start_h,
+					"start-m": wt.sat_start_m,
+					"fin-h": wt.sat_stop_h,
+					"fin-m": wt.sat_stop_m,
+				},
+				"sun": {
+					"rest": not wt.sun_enable,
+					"start-h": wt.sun_start_h,
+					"start-m": wt.sun_start_m,
+					"fin-h": wt.sun_stop_h,
+					"fin-m": wt.sun_stop_m,
+				},
+			},
 			"notification": {
-				"push": True,
-				"sound": True,
-				"orderSms": True,
-				"timeSms": True,
-				"orderMail": True,
-				"timeMail": True
+				"push": ofty_user.enable_push,
+				"sound": ofty_user.enable_sound_alert,
+				"orderSms": ofty_user.enable_sms_new_order,
+				"timeSms": ofty_user.enable_sms_startstop,
+				"orderMail": ofty_user.enable_email_new_order,
+				"timeMail": ofty_user.enable_email_startstop
 			},
 			"blackList": [
 				{
-					"id": "",
-					"name": ""
-				} for i in range(10)
+					"id": bg.id,
+					"name": (OftyUser.objects.get(user_id=bg.id)).nickname
+				} for bg in bad_guys
 			],
 			"rent": {
-				"address": "",  # адрес склада
-				"metro": "",  # ближайшая станция метро
-				"description": "",  # описание
+				"address": ofty_user.sklad,  # адрес склада
+				"metro": ofty_user.metro,  # ближайшая станция метро
+				"description": ofty_user.rent_commentary,  # описание
 				"delivery": [
 					{
-						"id": "",
-						"name": "",  # наименование доставки
-						"cost": 0  # цена
-					}
+						"id": dc.id,
+						"name": dc.name,  # наименование доставки
+						"cost": dc.value  # цена
+					} for dc in delivery_cases
 				]
 			}
 		}
 	}
 
 	return JsonResponse(ans)
+
+
+@logged
+@post_with_parameters("name", "site", "city", "mail", "phone", "phone2", "description")
+def save_info(request):
+	try:
+		django_user = request.user
+		ofty_user = OftyUser.objects.get(user=django_user)
+		ofty_user.nickname = request.POST["name"]
+		ofty_user.site = request.POST["site"]
+		ofty_user.city = request.POST["city"]
+		ofty_user.email = request.POST["mail"]
+		ofty_user.phone = request.POST["phone"]
+		ofty_user.phone2 = request.POST["phone2"]
+		ofty_user.company_description = request.POST["description"]
+		ofty_user.save()
+
+	except OftyUser.DoesNotExist:
+		return HttpResponse(f"Data error. OftyUser not found for current user ({django_user.id})", status=500)
+	return HttpResponse("OK")
+
+
+@logged
+@post_with_parameters("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+def save_work_time(request):
+	try:
+		django_user = request
+		wt = OftyUserWorkTime.objects.get(user=django_user)
+		
+		wt.mon_enable = not bool(request.POST["mon"]["rest"])
+		wt.mon_start_h = request.POST["mon"]["start-h"]
+		wt.mon_start_m = request.POST["mon"]["start-m"]
+		wt.mon_stop_h = request.POST["mon"]["fin-h"]
+		wt.mon_stop_m = request.POST["mon"]["fin-m"]
+
+		wt.tue_enable = not bool(request.POST["tue"]["rest"])
+		wt.tue_start_h = request.POST["tue"]["start-h"]
+		wt.tue_start_m = request.POST["tue"]["start-m"]
+		wt.tue_stop_h = request.POST["tue"]["fin-h"]
+		wt.tue_stop_m = request.POST["tue"]["fin-m"]
+
+		wt.wed_enable = not bool(request.POST["wed"]["rest"])
+		wt.wed_start_h = request.POST["wed"]["start-h"]
+		wt.wed_start_m = request.POST["wed"]["start-m"]
+		wt.wed_stop_h = request.POST["wed"]["fin-h"]
+		wt.wed_stop_m = request.POST["wed"]["fin-m"]
+
+		wt.thu_enable = not bool(request.POST["thu"]["rest"])
+		wt.thu_start_h = request.POST["thu"]["start-h"]
+		wt.thu_start_m = request.POST["thu"]["start-m"]
+		wt.thu_stop_h = request.POST["thu"]["fin-h"]
+		wt.thu_stop_m = request.POST["thu"]["fin-m"]
+
+		wt.fri_enable = not bool(request.POST["fri"]["rest"])
+		wt.fri_start_h = request.POST["fri"]["start-h"]
+		wt.fri_start_m = request.POST["fri"]["start-m"]
+		wt.fri_stop_h = request.POST["fri"]["fin-h"]
+		wt.fri_stop_m = request.POST["fri"]["fin-m"]
+
+		wt.sat_enable = not bool(request.POST["sat"]["rest"])
+		wt.sat_start_h = request.POST["sat"]["start-h"]
+		wt.sat_start_m = request.POST["sat"]["start-m"]
+		wt.sat_stop_h = request.POST["sat"]["fin-h"]
+		wt.sat_stop_m = request.POST["sat"]["fin-m"]
+
+		wt.sun_enable = not bool(request.POST["sun"]["rest"])
+		wt.sun_start_h = request.POST["sun"]["start-h"]
+		wt.sun_start_m = request.POST["sun"]["start-m"]
+		wt.sun_stop_h = request.POST["sun"]["fin-h"]
+		wt.sun_stop_m = request.POST["sun"]["fin-m"]
+
+		wt.save()
+	except KeyError:
+		return HttpResponse("Wrong data structure", status=500)
+	except ValueError:
+		return HttpResponse("Wrong data structure (value)", status=500)
+	return HttpResponse("OK")
+
+
+@logged
+@post_with_parameters("push", "sound", "orderSms", "timeSms", "orderMail", "timeMail")
+def save_notification(request):
+	django_user = request.user
+	try:
+		ofty_user = OftyUser.objects.get(user=django_user)
+	except OftyUser.DoesNotExist:
+		return HttpResponse(f"there is no OftyUser for user {django_user.id}", status=500)
+
+	ofty_user.enable_push = bool(request.POST["push"])
+	ofty_user.enable_sound_alert = bool(request.POST["sound"])
+	ofty_user.enable_sms_new_order = bool(request.POST["orderSms"])
+	ofty_user.enable_sms_startstop = bool(request.POST["timeSms"])
+	ofty_user.enable_email_new_order = bool(request.POST["orderMail"])
+	ofty_user.enable_email_startstop = bool(request.POST["timeMail"])
+	ofty_user.save()
+	return HttpResponse("OK")
+
+
+def save_blacklist(request):
+	return HttpResponse("Method not implemented yet", status=501)
+
+
+@logged
+@post_with_parameters("address", "metro", "description", "delivery")
+def save_rent(request):
+	django_user = request.user
+	try:
+		ofty_user = OftyUser.objects.get(user=django_user)
+	except OftyUser.DoesNotExist:
+		return HttpResponse(f"there is no OftyUser for user {ofty_user.id}", status=500)
+
+	ofty_user.sklad = request.POST["address"]
+	ofty_user.metro = request.POST["metro"]
+	ofty_user.company_description = request.POST["description"]
+
+	# удалить предыдущие записи
+	dcses = DeliveryCase.objects.filter(user=django_user)
+	for dc in dcses:
+		dc.is_deleted = True
+		dc.save()
+
+	upload = json.loads(request.POST["delivery"])
+	if type(upload) is not list:
+		return HttpResponse("delivery parameter must be valid json array", status=500)
+
+	try:
+		for up in upload:
+			DeliveryCase.objects.create(
+				user=django_user,
+				name=up["name"],
+				value=up["cost"]
+			)
+	except KeyError:
+		return HttpResponse("wrong data structure", status=500)
+	return HttpResponse("OK")
