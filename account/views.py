@@ -4,12 +4,13 @@ from django.contrib.auth import authenticate, login as django_login, logout as d
 from django.contrib.auth.models import User
 from account.models import OftyUser, OftyUserWorkTime, DeliveryCase, BlackListInstance
 from units.models import Unit
+from location.models import City
 import json
-from PIL import Image
+from PIL import Image, ImageFile
 from io import BytesIO
 import os
 from datetime import datetime
-
+from re import match
 
 # Create your views here.
 def logged_and_post(method):
@@ -126,6 +127,8 @@ def save_avatar(request):
 	for chunk in chunks:
 		file.write(chunk)
 
+	ImageFile.LOAD_TRUNCATED_IMAGES = True
+
 	img = Image.open(file)
 	width, height = img.size
 	min_size = min(width, height)
@@ -215,7 +218,10 @@ def about_me(request):
 def get_settings(request):
 	django_user = request.user
 	uid = django_user.id
-	ofty_user = OftyUser.objects.get(user=django_user)
+	try:
+		ofty_user = OftyUser.objects.get(user=django_user)
+	except OftyUser.DoesNotExist:
+		ofty_user = OftyUser.objects.create(user=django_user)
 	try:
 		wt = OftyUserWorkTime.objects.get(user=django_user)
 	except OftyUserWorkTime.DoesNotExist:
@@ -327,18 +333,26 @@ def get_settings(request):
 def save_info(request):
 	try:
 		django_user = request.user
-		ofty_user = OftyUser.objects.get(user=django_user)
+		try:
+			ofty_user = OftyUser.objects.get(user=django_user)
+		except OftyUser.DoesNotExist:
+			ofty_user = OftyUser.objects.create(user=django_user)
+
 		ofty_user.nickname = request.POST["name"]
-		ofty_user.site = request.POST["site"]
-		ofty_user.city = request.POST["city"]
+		filtered = match(
+			r'^(http://www\.|https://www\.|http://|https://)?[a-z0-9]+([\-.][a-z0-9]+)*\.['
+			r'a-z]{2,5}(:[0-9]{1,5})?(/.*)?$', request.POST['site'])
+		ofty_user.site = filtered.string if filtered is not None else ""
+		ofty_user.city = City.objects.get(name=request.POST["city"])
 		ofty_user.email = request.POST["mail"]
 		ofty_user.phone = request.POST["phone"]
 		ofty_user.phone2 = request.POST["phone2"]
 		ofty_user.company_description = request.POST["description"]
 		ofty_user.save()
-
 	except OftyUser.DoesNotExist:
 		return HttpResponse(f"Data error. OftyUser not found for current user ({django_user.id})", status=500)
+	except City.DoesNotExist:
+		return HttpResponse(f'There is no specified city in base', status=500)
 	return HttpResponse("OK")
 
 
