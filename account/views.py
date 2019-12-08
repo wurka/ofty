@@ -342,6 +342,28 @@ def save_info(request):
 	return HttpResponse("OK")
 
 
+# получить значение часа
+def hour(string_value):
+	ans = int(string_value)
+	if ans < 0 or ans > 23:
+		raise ValueError("hour must be 0 to 23")
+	return ans
+
+
+# получить значение минут
+def minute(string_value):
+	ans = int(string_value)
+	if ans < 0 or ans > 59:
+		raise ValueError("minutes must be 0 to 59")
+	return ans
+
+
+def flag(json_string_value):
+	ans = json.loads(json_string_value)
+	if type(ans) is not bool:
+		return ValueError("value must be <true> or <false>")
+
+
 @logged
 @post_with_parameters("mon", "tue", "wed", "thu", "fri", "sat", "sun")
 def save_work_time(request):
@@ -349,47 +371,47 @@ def save_work_time(request):
 		django_user = request
 		wt = OftyUserWorkTime.objects.get(user=django_user)
 		
-		wt.mon_enable = not bool(request.POST["mon"]["rest"])
-		wt.mon_start_h = request.POST["mon"]["start-h"]
-		wt.mon_start_m = request.POST["mon"]["start-m"]
-		wt.mon_stop_h = request.POST["mon"]["fin-h"]
-		wt.mon_stop_m = request.POST["mon"]["fin-m"]
+		wt.mon_enable = not flag(request.POST["mon"]["rest"])
+		wt.mon_start_h = hour(request.POST["mon"]["start-h"])
+		wt.mon_start_m = minute(request.POST["mon"]["start-m"])
+		wt.mon_stop_h = hour(request.POST["mon"]["fin-h"])
+		wt.mon_stop_m = minute(request.POST["mon"]["fin-m"])
 
-		wt.tue_enable = not bool(request.POST["tue"]["rest"])
-		wt.tue_start_h = request.POST["tue"]["start-h"]
-		wt.tue_start_m = request.POST["tue"]["start-m"]
-		wt.tue_stop_h = request.POST["tue"]["fin-h"]
-		wt.tue_stop_m = request.POST["tue"]["fin-m"]
+		wt.tue_enable = not flag(request.POST["tue"]["rest"])
+		wt.tue_start_h = hour(request.POST["tue"]["start-h"])
+		wt.tue_start_m = minute(request.POST["tue"]["start-m"])
+		wt.tue_stop_h = hour(request.POST["tue"]["fin-h"])
+		wt.tue_stop_m = minute(request.POST["tue"]["fin-m"])
 
-		wt.wed_enable = not bool(request.POST["wed"]["rest"])
-		wt.wed_start_h = request.POST["wed"]["start-h"]
-		wt.wed_start_m = request.POST["wed"]["start-m"]
-		wt.wed_stop_h = request.POST["wed"]["fin-h"]
-		wt.wed_stop_m = request.POST["wed"]["fin-m"]
+		wt.wed_enable = not flag(request.POST["wed"]["rest"])
+		wt.wed_start_h = hour(request.POST["wed"]["start-h"])
+		wt.wed_start_m = minute(request.POST["wed"]["start-m"])
+		wt.wed_stop_h = hour(request.POST["wed"]["fin-h"])
+		wt.wed_stop_m = minute(request.POST["wed"]["fin-m"])
 
-		wt.thu_enable = not bool(request.POST["thu"]["rest"])
-		wt.thu_start_h = request.POST["thu"]["start-h"]
-		wt.thu_start_m = request.POST["thu"]["start-m"]
-		wt.thu_stop_h = request.POST["thu"]["fin-h"]
-		wt.thu_stop_m = request.POST["thu"]["fin-m"]
+		wt.thu_enable = not flag(request.POST["thu"]["rest"])
+		wt.thu_start_h = hour(request.POST["thu"]["start-h"])
+		wt.thu_start_m = minute(request.POST["thu"]["start-m"])
+		wt.thu_stop_h = hour(request.POST["thu"]["fin-h"])
+		wt.thu_stop_m = minute(request.POST["thu"]["fin-m"])
 
-		wt.fri_enable = not bool(request.POST["fri"]["rest"])
-		wt.fri_start_h = request.POST["fri"]["start-h"]
-		wt.fri_start_m = request.POST["fri"]["start-m"]
-		wt.fri_stop_h = request.POST["fri"]["fin-h"]
-		wt.fri_stop_m = request.POST["fri"]["fin-m"]
+		wt.fri_enable = not flag(request.POST["fri"]["rest"])
+		wt.fri_start_h = hour(request.POST["fri"]["start-h"])
+		wt.fri_start_m = minute(request.POST["fri"]["start-m"])
+		wt.fri_stop_h = hour(request.POST["fri"]["fin-h"])
+		wt.fri_stop_m = minute(request.POST["fri"]["fin-m"])
 
-		wt.sat_enable = not bool(request.POST["sat"]["rest"])
-		wt.sat_start_h = request.POST["sat"]["start-h"]
-		wt.sat_start_m = request.POST["sat"]["start-m"]
-		wt.sat_stop_h = request.POST["sat"]["fin-h"]
-		wt.sat_stop_m = request.POST["sat"]["fin-m"]
+		wt.sat_enable = not flag(request.POST["sat"]["rest"])
+		wt.sat_start_h = hour(request.POST["sat"]["start-h"])
+		wt.sat_start_m = minute(request.POST["sat"]["start-m"])
+		wt.sat_stop_h = hour(request.POST["sat"]["fin-h"])
+		wt.sat_stop_m = minute(request.POST["sat"]["fin-m"])
 
-		wt.sun_enable = not bool(request.POST["sun"]["rest"])
-		wt.sun_start_h = request.POST["sun"]["start-h"]
-		wt.sun_start_m = request.POST["sun"]["start-m"]
-		wt.sun_stop_h = request.POST["sun"]["fin-h"]
-		wt.sun_stop_m = request.POST["sun"]["fin-m"]
+		wt.sun_enable = not flag(request.POST["sun"]["rest"])
+		wt.sun_start_h = hour(request.POST["sun"]["start-h"])
+		wt.sun_start_m = minute(request.POST["sun"]["start-m"])
+		wt.sun_stop_h = hour(request.POST["sun"]["fin-h"])
+		wt.sun_stop_m = minute(request.POST["sun"]["fin-m"])
 
 		wt.save()
 	except KeyError:
@@ -408,14 +430,17 @@ def save_notification(request):
 	except OftyUser.DoesNotExist:
 		return HttpResponse(f"there is no OftyUser for user {django_user.id}", status=500)
 
-	ofty_user.enable_push = bool(request.POST["push"])
-	ofty_user.enable_sound_alert = bool(request.POST["sound"])
-	ofty_user.enable_sms_new_order = bool(request.POST["orderSms"])
-	ofty_user.enable_sms_startstop = bool(request.POST["timeSms"])
-	ofty_user.enable_email_new_order = bool(request.POST["orderMail"])
-	ofty_user.enable_email_startstop = bool(request.POST["timeMail"])
-	ofty_user.save()
-	return HttpResponse("OK")
+	try:
+		ofty_user.enable_push = flag(request.POST["push"])
+		ofty_user.enable_sound_alert = flag(request.POST["sound"])
+		ofty_user.enable_sms_new_order = flag(request.POST["orderSms"])
+		ofty_user.enable_sms_startstop = flag(request.POST["timeSms"])
+		ofty_user.enable_email_new_order = flag(request.POST["orderMail"])
+		ofty_user.enable_email_startstop = flag(request.POST["timeMail"])
+		ofty_user.save()
+		return HttpResponse("OK")
+	except ValueError:
+		return HttpResponse("Wrong syntax (value)", status=500)
 
 
 def save_blacklist(request):
@@ -431,9 +456,11 @@ def save_rent(request):
 	except OftyUser.DoesNotExist:
 		return HttpResponse(f"there is no OftyUser for user {ofty_user.id}", status=500)
 
-	ofty_user.sklad = request.POST["address"]
-	ofty_user.metro = request.POST["metro"]
-	ofty_user.company_description = request.POST["description"]
+	max_text_size = 500  # максимальное количество символов в текстовых полях
+
+	ofty_user.sklad = request.POST["address"][:max_text_size]
+	ofty_user.metro = request.POST["metro"][:max_text_size]
+	ofty_user.company_description = request.POST["description"][:max_text_size]
 
 	# удалить предыдущие записи
 	dcses = DeliveryCase.objects.filter(user=django_user)
@@ -441,7 +468,10 @@ def save_rent(request):
 		dc.is_deleted = True
 		dc.save()
 
-	upload = json.loads(request.POST["delivery"])
+	try:
+		upload = json.loads(request.POST["delivery"])
+	except json.JSONDecodeError:
+		return HttpResponse("Wrong syntax (json decode error)", status=500)
 	if type(upload) is not list:
 		return HttpResponse("delivery parameter must be valid json array", status=500)
 
