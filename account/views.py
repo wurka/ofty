@@ -10,7 +10,8 @@ from PIL import Image, ImageFile
 from io import BytesIO
 import os
 from datetime import datetime
-from re import match
+import re
+
 
 # Create your views here.
 def logged_and_post(method):
@@ -44,15 +45,28 @@ def post_with_parameters(*args):
 	return decor
 
 
+@post_with_parameters('user', 'password')
 def login(request):
-	if "user" not in request.POST:
-		return HttpResponse("specify user, please", status=500)
-	if "password" not in request.POST:
-		return HttpResponse("specify password, please", status=500)
+	nickname = request.POST['user']
+	password = request.POST['password']
+	try:
+		ofty_user = OftyUser.objects.get(nickname=nickname)
+		username = ofty_user.user.user_name
+	except OftyUser.MultipleObjectsReturned:
+		return HttpResponse("Multiaccount error", status=500)
+	except OftyUser.DoesNotExist:
+		# по никнейму не нашли - будем подключаться (пытаться по username)
+		username = nickname
 
-	user = authenticate(username=request.POST["user"], password=request.POST["password"])
+	user = authenticate(username=username, password=password)
 	if user is not None:
 		django_login(request, user)
+		# создание OftyUser, если его нет
+		try:
+			OftyUser.objects.get(user=user)
+		except OftyUser.DoesNotExist:
+			OftyUser.objects.create(user=user)
+
 		return HttpResponse("OK")
 	else:
 		return HttpResponse("login failed", status=500)
@@ -109,7 +123,7 @@ def new_account(request):
 			username=request.POST["login"],
 			email="",
 			password=request.POST['password'])
-		OftyUser.objects.create(user=new_user)
+		OftyUser.objects.create(user=new_user, nickname=new_user.username)
 		return HttpResponse("OK")
 
 
@@ -146,7 +160,7 @@ def save_avatar(request):
 
 	return HttpResponse("OK")
 
-
+"""
 @logged_and_post
 def alerts_set(request):
 	for param in [
@@ -190,6 +204,7 @@ def alerts_get(request):
 		"enable_email_startstop": ofty_user.enable_email_startstop
 	}
 	return JsonResponse(ans)
+"""
 
 
 def about_me(request):
@@ -231,6 +246,17 @@ def get_settings(request):
 	delivery_cases = DeliveryCase.objects.filter(user=django_user, is_deleted=False)
 
 	ans = {
+		"user": {
+			"nickname": ofty_user.nickname,
+			"notification": {
+				"push": json.dumps(ofty_user.enable_push),
+				"sound": json.dumps(ofty_user.enable_sound_alert),
+				"orderSms": json.dumps(ofty_user.enable_sms_new_order),
+				"timeSms": json.dumps(ofty_user.enable_sms_startstop),
+				"orderMail": json.dumps(ofty_user.enable_email_new_order),
+				"timeMail": json.dumps(ofty_user.enable_email_startstop)
+			},
+		},
 		"avatar": {
 			"big": request.build_absolute_uri(f"/static/user_{uid}/avatar-170.png"),
 			"small": request.build_absolute_uri(f"/static/user_{uid}/avatar-71.png"),
@@ -296,14 +322,6 @@ def get_settings(request):
 					"fin-m": wt.sun_stop_m,
 				},
 			},
-			"notification": {
-				"push": ofty_user.enable_push,
-				"sound": ofty_user.enable_sound_alert,
-				"orderSms": ofty_user.enable_sms_new_order,
-				"timeSms": ofty_user.enable_sms_startstop,
-				"orderMail": ofty_user.enable_email_new_order,
-				"timeMail": ofty_user.enable_email_startstop
-			},
 			"blackList": [
 				{
 					"id": bg.id,
@@ -328,6 +346,26 @@ def get_settings(request):
 	return JsonResponse(ans)
 
 
+# получить номер телефона из строки, содержащей его
+# берутся 11 первых цифр (игнорируются другие символы)
+# и из них составляется номер
+# если первым шёл "+", то он останется
+def build_phone_number(some_string):
+	if len(some_string) < 11:
+		return ""  # здесь не может уместиться номер телефона
+
+	digits = "".join(re.findall(r'\d+', some_string))
+	if len(digits) < 11:
+		return ""  # номер телефона не валидный
+	else:
+		d = digits[:11]
+		ans = ""
+		if some_string[0] == "+":
+			ans += "+"
+		ans += f"{d[:4]}-{d[4:7]}-{d[7:9]}-{d[9:11]}"
+	return ans
+
+
 @logged
 @post_with_parameters("name", "site", "city", "mail", "phone", "phone2", "description")
 def save_info(request):
@@ -339,14 +377,18 @@ def save_info(request):
 			ofty_user = OftyUser.objects.create(user=django_user)
 
 		ofty_user.nickname = request.POST["name"]
-		filtered = match(
+		filtered = re.match(
 			r'^(http://www\.|https://www\.|http://|https://)?[a-z0-9]+([\-.][a-z0-9]+)*\.['
 			r'a-z]{2,5}(:[0-9]{1,5})?(/.*)?$', request.POST['site'])
 		ofty_user.site = filtered.string if filtered is not None else ""
+
 		ofty_user.city = City.objects.get(name=request.POST["city"])
+
 		ofty_user.email = request.POST["mail"]
-		ofty_user.phone = request.POST["phone"]
-		ofty_user.phone2 = request.POST["phone2"]
+
+		# значащие цифры но
+		ofty_user.phone = build_phone_number(request.POST["phone"])
+		ofty_user.phone2 = build_phone_number(request.POST["phone2"])
 		ofty_user.company_description = request.POST["description"]
 		ofty_user.save()
 	except OftyUser.DoesNotExist:
@@ -373,59 +415,71 @@ def minute(string_value):
 
 
 def flag(json_string_value):
-	ans = json.loads(json_string_value)
+	if type(json_string_value) is str:
+		ans = json.loads(json_string_value)
+	elif type(json_string_value) is bool:
+		return json_string_value
 	if type(ans) is not bool:
 		return ValueError("value must be <true> or <false>")
+	return ans
 
 
 @logged
 @post_with_parameters("mon", "tue", "wed", "thu", "fri", "sat", "sun")
 def save_work_time(request):
 	try:
-		django_user = request
-		wt = OftyUserWorkTime.objects.get(user=django_user)
-		
-		wt.mon_enable = not flag(request.POST["mon"]["rest"])
-		wt.mon_start_h = hour(request.POST["mon"]["start-h"])
-		wt.mon_start_m = minute(request.POST["mon"]["start-m"])
-		wt.mon_stop_h = hour(request.POST["mon"]["fin-h"])
-		wt.mon_stop_m = minute(request.POST["mon"]["fin-m"])
+		django_user = request.user
+		try:
+			wt = OftyUserWorkTime.objects.get(user=django_user)
+		except OftyUserWorkTime.DoesNotExist:
+			wt = OftyUserWorkTime.objects.create(user=django_user)
 
-		wt.tue_enable = not flag(request.POST["tue"]["rest"])
-		wt.tue_start_h = hour(request.POST["tue"]["start-h"])
-		wt.tue_start_m = minute(request.POST["tue"]["start-m"])
-		wt.tue_stop_h = hour(request.POST["tue"]["fin-h"])
-		wt.tue_stop_m = minute(request.POST["tue"]["fin-m"])
+		days = {
+			day: json.loads(request.POST[day]) for day in [
+				"mon", "tue", "wed", "thu", "fri", "sat", "sun"
+			]
+		}
+		wt.mon_enable = not flag(days["mon"]["rest"])
+		wt.mon_start_h = hour(days["mon"]["start-h"])
+		wt.mon_start_m = minute(days["mon"]["start-m"])
+		wt.mon_stop_h = hour(days["mon"]["fin-h"])
+		wt.mon_stop_m = minute(days["mon"]["fin-m"])
 
-		wt.wed_enable = not flag(request.POST["wed"]["rest"])
-		wt.wed_start_h = hour(request.POST["wed"]["start-h"])
-		wt.wed_start_m = minute(request.POST["wed"]["start-m"])
-		wt.wed_stop_h = hour(request.POST["wed"]["fin-h"])
-		wt.wed_stop_m = minute(request.POST["wed"]["fin-m"])
+		wt.tue_enable = not flag(days["tue"]["rest"])
+		wt.tue_start_h = hour(days["tue"]["start-h"])
+		wt.tue_start_m = minute(days["tue"]["start-m"])
+		wt.tue_stop_h = hour(days["tue"]["fin-h"])
+		wt.tue_stop_m = minute(days["tue"]["fin-m"])
 
-		wt.thu_enable = not flag(request.POST["thu"]["rest"])
-		wt.thu_start_h = hour(request.POST["thu"]["start-h"])
-		wt.thu_start_m = minute(request.POST["thu"]["start-m"])
-		wt.thu_stop_h = hour(request.POST["thu"]["fin-h"])
-		wt.thu_stop_m = minute(request.POST["thu"]["fin-m"])
+		wt.wed_enable = not flag(days["wed"]["rest"])
+		wt.wed_start_h = hour(days["wed"]["start-h"])
+		wt.wed_start_m = minute(days["wed"]["start-m"])
+		wt.wed_stop_h = hour(days["wed"]["fin-h"])
+		wt.wed_stop_m = minute(days["wed"]["fin-m"])
 
-		wt.fri_enable = not flag(request.POST["fri"]["rest"])
-		wt.fri_start_h = hour(request.POST["fri"]["start-h"])
-		wt.fri_start_m = minute(request.POST["fri"]["start-m"])
-		wt.fri_stop_h = hour(request.POST["fri"]["fin-h"])
-		wt.fri_stop_m = minute(request.POST["fri"]["fin-m"])
+		wt.thu_enable = not flag(days["thu"]["rest"])
+		wt.thu_start_h = hour(days["thu"]["start-h"])
+		wt.thu_start_m = minute(days["thu"]["start-m"])
+		wt.thu_stop_h = hour(days["thu"]["fin-h"])
+		wt.thu_stop_m = minute(days["thu"]["fin-m"])
 
-		wt.sat_enable = not flag(request.POST["sat"]["rest"])
-		wt.sat_start_h = hour(request.POST["sat"]["start-h"])
-		wt.sat_start_m = minute(request.POST["sat"]["start-m"])
-		wt.sat_stop_h = hour(request.POST["sat"]["fin-h"])
-		wt.sat_stop_m = minute(request.POST["sat"]["fin-m"])
+		wt.fri_enable = not flag(days["fri"]["rest"])
+		wt.fri_start_h = hour(days["fri"]["start-h"])
+		wt.fri_start_m = minute(days["fri"]["start-m"])
+		wt.fri_stop_h = hour(days["fri"]["fin-h"])
+		wt.fri_stop_m = minute(days["fri"]["fin-m"])
 
-		wt.sun_enable = not flag(request.POST["sun"]["rest"])
-		wt.sun_start_h = hour(request.POST["sun"]["start-h"])
-		wt.sun_start_m = minute(request.POST["sun"]["start-m"])
-		wt.sun_stop_h = hour(request.POST["sun"]["fin-h"])
-		wt.sun_stop_m = minute(request.POST["sun"]["fin-m"])
+		wt.sat_enable = not flag(days["sat"]["rest"])
+		wt.sat_start_h = hour(days["sat"]["start-h"])
+		wt.sat_start_m = minute(days["sat"]["start-m"])
+		wt.sat_stop_h = hour(days["sat"]["fin-h"])
+		wt.sat_stop_m = minute(days["sat"]["fin-m"])
+
+		wt.sun_enable = not flag(days["sun"]["rest"])
+		wt.sun_start_h = hour(days["sun"]["start-h"])
+		wt.sun_start_m = minute(days["sun"]["start-m"])
+		wt.sun_stop_h = hour(days["sun"]["fin-h"])
+		wt.sun_stop_m = minute(days["sun"]["fin-m"])
 
 		wt.save()
 	except KeyError:
@@ -442,7 +496,7 @@ def save_notification(request):
 	try:
 		ofty_user = OftyUser.objects.get(user=django_user)
 	except OftyUser.DoesNotExist:
-		return HttpResponse(f"there is no OftyUser for user {django_user.id}", status=500)
+		ofty_user = OftyUser.objects.create(user=django_user)
 
 	try:
 		ofty_user.enable_push = flag(request.POST["push"])
@@ -464,6 +518,7 @@ def save_blacklist(request):
 @logged
 @post_with_parameters("address", "metro", "description", "delivery")
 def save_rent(request):
+	# TODO: address, metro, description
 	django_user = request.user
 	try:
 		ofty_user = OftyUser.objects.get(user=django_user)

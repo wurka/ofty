@@ -3,9 +3,9 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-	url(r'^login$', views.login),
+	path('login', views.login, name='login'),
 	path('logout', views.logout),
-	url(r'^login-page$', views.login_page),
+	path('login-page', views.login_page),
 	path('demo', views.demo),
 	path('password-set', views.password_set),
 	# path('delivery-set', views.delivery_set),
@@ -13,14 +13,14 @@ urlpatterns = [
 	# path('time-set', views.time_set),
 	# path('time-get', views.time_get),
 	path('new-account', views.new_account, name='new-account'),
-	path('alerts-set', views.alerts_set),
-	path('alerts-get', views.alerts_get),
+	# path('alerts-set', views.alerts_set),
+	# path('alerts-get', views.alerts_get),
 	path('about-me', views.about_me, name='about-me'),
 	path('get-settings', views.get_settings, name='get-settings'),
 	path('save-avatar', views.save_avatar, name='save-avatar'),
 	path('save-info', views.save_info, name='save-info'),
-	path('save-work-time', views.save_work_time),
-	path('save-notification', views.save_notification),
+	path('save-work-time', views.save_work_time, name='save-work-time'),
+	path('save-notification', views.save_notification, name='save-notification'),
 	path('save-blacklist', views.save_blacklist),
 	path('save-rent', views.save_rent),
 ]

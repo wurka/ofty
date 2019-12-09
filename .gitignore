@@ -17,3 +17,4 @@
 /location/__pycache__/*.pyc
 /service/__pycache__/*.pyc
 /service/migrations/__pycache__/*.pyc
+/.coverage
