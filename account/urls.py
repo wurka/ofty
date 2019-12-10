@@ -22,5 +22,5 @@ urlpatterns = [
 	path('save-work-time', views.save_work_time, name='save-work-time'),
 	path('save-notification', views.save_notification, name='save-notification'),
 	path('save-blacklist', views.save_blacklist),
-	path('save-rent', views.save_rent),
+	path('save-rent', views.save_rent, name='save-rent'),
 ]

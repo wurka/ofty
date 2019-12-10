@@ -160,6 +160,7 @@ def save_avatar(request):
 
 	return HttpResponse("OK")
 
+
 """
 @logged_and_post
 def alerts_set(request):
@@ -369,8 +370,8 @@ def build_phone_number(some_string):
 @logged
 @post_with_parameters("name", "site", "city", "mail", "phone", "phone2", "description")
 def save_info(request):
+	django_user = request.user
 	try:
-		django_user = request.user
 		try:
 			ofty_user = OftyUser.objects.get(user=django_user)
 		except OftyUser.DoesNotExist:
@@ -415,6 +416,7 @@ def minute(string_value):
 
 
 def flag(json_string_value):
+	ans = False
 	if type(json_string_value) is str:
 		ans = json.loads(json_string_value)
 	elif type(json_string_value) is bool:
@@ -523,13 +525,14 @@ def save_rent(request):
 	try:
 		ofty_user = OftyUser.objects.get(user=django_user)
 	except OftyUser.DoesNotExist:
-		return HttpResponse(f"there is no OftyUser for user {ofty_user.id}", status=500)
+		ofty_user = OftyUser.objects.create(user=django_user)
 
 	max_text_size = 500  # максимальное количество символов в текстовых полях
 
 	ofty_user.sklad = request.POST["address"][:max_text_size]
 	ofty_user.metro = request.POST["metro"][:max_text_size]
-	ofty_user.company_description = request.POST["description"][:max_text_size]
+	ofty_user.rent_commentary = request.POST["description"][:max_text_size]
+	ofty_user.save()
 
 	# удалить предыдущие записи
 	dcses = DeliveryCase.objects.filter(user=django_user)

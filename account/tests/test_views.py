@@ -243,3 +243,52 @@ class MyTest(TestCase):
 			self.assertEqual(resp.status_code, 200, resp.content)
 			ans = json.loads(resp.content)
 			self.assertEqual(ans['user']['notification'], params)
+
+	def test_save_rent(self):
+		params = {
+			"address": "my address",
+			"metro": "Коломенская",
+			"description": "Условия аренды",
+			"delivery": json.dumps([
+				{
+					"name": "оленями",
+					"cost": 8000},
+				{
+					"name": "кантованием",
+					"cost": 100500}
+			])
+		}
+		# без логина - не должен пройти запрос
+		resp = self.client.post(reverse('save-rent'), params)
+		self.assertEqual(resp.status_code, 401)
+
+		self.client.force_login(self.test_user)
+		# а с логином - должен
+		resp = self.client.post(reverse('save-rent'), params)
+		self.assertEqual(resp.status_code, 200, resp.content)
+
+		# получить настройки
+		resp = self.client.get(reverse('get-settings'))
+		self.assertEqual(resp.status_code, 200, resp.content)
+		ans = json.loads(resp.content)
+
+		# функция проверки полей delivery
+		def deliveries_equals(obj1, obj2):
+			for prop in ['address', 'metro', 'description']:
+				if obj1[prop] != obj2[prop]:
+					return False
+
+			for delivery_case in obj1['delivery']:
+				founded = False
+				for variant in obj2['delivery']:
+					if variant['name'] == delivery_case['name'] and variant['cost'] == delivery_case['cost']:
+						founded = True
+						break
+				if not founded:
+					return False
+			return True
+
+		sended = params.copy()
+		sended['delivery'] = json.loads(params["delivery"])
+
+		self.assertEqual(deliveries_equals(sended, ans['company']['rent']), True, str(params)+"\r\n-------\r\n" + str(ans))
