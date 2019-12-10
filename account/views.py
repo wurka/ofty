@@ -51,22 +51,23 @@ def login(request):
 	password = request.POST['password']
 	try:
 		ofty_user = OftyUser.objects.get(nickname=nickname)
-		username = ofty_user.user.user_name
-	except OftyUser.MultipleObjectsReturned:
-		return HttpResponse("Multiaccount error", status=500)
+	# except OftyUser.MultipleObjectsReturned:
+		# return HttpResponse("Multiaccount error", status=500)
 	except OftyUser.DoesNotExist:
-		# по никнейму не нашли - будем подключаться (пытаться по username)
-		username = nickname
+		# по никнейму не нашли - попытаемся найти по username
+		try:
+			some_user = User.objects.get(username=nickname)
+			# нашли - создадим OftyUser и будем подключаться (пытаться по username)
+			ofty_user = OftyUser.objects.create(user=some_user, nickname=request.user.username)
+		except User.DoesNotExist:
+			# не нашли - ошибка
+			return HttpResponse("login failed", status=500)
+
+	username = ofty_user.user.username
 
 	user = authenticate(username=username, password=password)
 	if user is not None:
 		django_login(request, user)
-		# создание OftyUser, если его нет
-		try:
-			OftyUser.objects.get(user=user)
-		except OftyUser.DoesNotExist:
-			OftyUser.objects.create(user=user)
-
 		return HttpResponse("OK")
 	else:
 		return HttpResponse("login failed", status=500)
@@ -75,14 +76,7 @@ def login(request):
 @logged_and_post
 def logout(request):
 	django_logout(request)
-	if request.user.is_anonymous:
-		return HttpResponse("OK")
-	else:
-		return HttpResponse("something going wrong with logout", status=500)
-
-
-def login_page(request):
-	return HttpResponse("Where is my login_page dude?")
+	return HttpResponse("OK")
 
 
 def demo(request):
@@ -103,18 +97,12 @@ def password_set(request):
 		request.user.set_password(request.POST["password"])
 		request.user.save()
 		user = authenticate(request, username=oldname, password=request.POST["password"])
-		if user is not None:
-			django_login(request, user)
-		else:
-			return HttpResponse("unpredictable password_set result", status=500)
+		django_login(request, user)
 		return HttpResponse("OK")
 
 
+@post_with_parameters("login", "password")
 def new_account(request):
-	must = ["login", "password"]
-	for m in must:
-		if m not in request.POST:
-			return HttpResponse(f"There is no parameter {m}", status=500)
 	try:
 		User.objects.get(username=request.POST['login'])
 		return HttpResponse("login already exists", status=500)
@@ -222,10 +210,10 @@ def about_me(request):
 
 		try:
 			ofty_user = OftyUser.objects.get(user=request.user)
-			ans["stock-capacity"] = ofty_user.stock_size
-			ans["stock-occupied"] = len(Unit.objects.filter(owner=request.user, is_deleted=False))
 		except OftyUser.DoesNotExist:
-			return HttpResponse("its strange, but threre is no such OftyUser", status=500)
+			ofty_user = OftyUser.objects.create(user=request.user)
+		ans["stock-capacity"] = ofty_user.stock_size
+		ans["stock-occupied"] = len(Unit.objects.filter(owner=request.user, is_deleted=False))
 
 	return JsonResponse(ans)
 
@@ -392,8 +380,6 @@ def save_info(request):
 		ofty_user.phone2 = build_phone_number(request.POST["phone2"])
 		ofty_user.company_description = request.POST["description"]
 		ofty_user.save()
-	except OftyUser.DoesNotExist:
-		return HttpResponse(f"Data error. OftyUser not found for current user ({django_user.id})", status=500)
 	except City.DoesNotExist:
 		return HttpResponse(f'There is no specified city in base', status=500)
 	return HttpResponse("OK")
@@ -535,7 +521,7 @@ def save_rent(request):
 	ofty_user.save()
 
 	# удалить предыдущие записи
-	dcses = DeliveryCase.objects.filter(user=django_user)
+	dcses = DeliveryCase.objects.filter(user=django_user, is_deleted=False)
 	for dc in dcses:
 		dc.is_deleted = True
 		dc.save()

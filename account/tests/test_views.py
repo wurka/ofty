@@ -9,16 +9,37 @@ from account.views import build_phone_number
 class MyTest(TestCase):
 	fixtures = ['location/fixtures/city.json']
 
+	def page_available(self, url, method="get", params={}):
+		if method == "get":
+			resp = self.client.get(url, params)
+		elif method == "post":
+			resp = self.client.post(url, params)
+		else:
+			raise ValueError("uknown method " + method)
+		self.assertEqual(resp.status_code, 200, resp.content)
+
+	def fails(self, url, method, status_code, params={}):
+		if method == "get":
+			resp = self.client.get(url, params)
+		elif method == "post":
+			resp = self.client.post(url, params)
+		else:
+			raise ValueError("uknown method " + method)
+		self.assertEqual(resp.status_code, status_code, resp.content)
+
+	def i_am_loggined(self):
+		r = self.client.get(reverse('about-me'))
+		self.assertEqual(r.status_code, 200, r.content)
+		a = json.loads(r.content)
+		return not a['anonymous']
+
 	def setUp(self):
 		self.test_user = User.objects.create_user("test-user", "test@mail.x", "test-password")
 		pass
 
 	def test_login(self):
 		# проверка текущего пользователя (должен быть аноним)
-		resp = self.client.get(reverse('about-me'))
-		ans = json.loads(resp.content)
-		self.assertEqual(ans['username'], 'anonymous')
-		self.assertEqual(ans['anonymous'], True)
+		self.assertEqual(self.i_am_loggined(), False)
 
 		# попытка залогиниться
 		resp = self.client.post(reverse('login'), {
@@ -34,14 +55,36 @@ class MyTest(TestCase):
 		self.assertEqual(ans['username'], 'test-user')
 		self.assertEqual(ans['anonymous'], False)
 
+		# выходим
+		self.page_available(reverse('logout'), "post")
+		# проверка выхода
+		resp = self.client.get(reverse('about-me'))
+		self.assertEqual(resp.status_code, 200, resp.content)
+		ans = json.loads(resp.content)
+		self.assertEqual(self.i_am_loggined(), False)
+
+		# заходим с ошибкой в пароле
+		resp = self.client.post(reverse('login'), {
+			'user': 'test-user',
+			'password': 'XXXXXX'
+		})
+		self.assertEqual(resp.status_code, 500, resp.content)
+		self.assertEqual(self.i_am_loggined(), False)
+
+		# заходим с ошибкой в логине
+		resp = self.client.post(reverse('login'), {
+			'user': 'uknown-unregistered-user',
+			'password': 'wrong-password'
+		})
+		self.assertEqual(resp.status_code, 500, resp.content)
+		self.assertEqual(self.i_am_loggined(), False)
+
 	def test_get_settings(self):
-		resp = self.client.get(reverse('get-settings'))
 		# без логина страница недоступна
-		self.assertEqual(resp.status_code, 401)
+		self.fails(reverse('get-settings'), "get", 401)
 		# логинимся
 		self.client.force_login(self.test_user)
-		resp = self.client.get(reverse('get-settings'))
-		self.assertEqual(resp.status_code, 200)
+		self.page_available(reverse('get-settings'), "get")
 
 	def test_avatar(self):
 		self.client.force_login(self.test_user)
@@ -61,6 +104,9 @@ class MyTest(TestCase):
 			self.assertEqual(resp.status_code, 200)
 
 		# я не умею проверять static файлы. не проверить =(
+		# попытка загрузить ничего
+		resp = self.client.post(reverse('save-avatar'))
+		self.assertEqual(resp.status_code, 500)
 
 	def test_build_phone_number(self):
 		tests = [
@@ -136,7 +182,7 @@ class MyTest(TestCase):
 				self.assertEqual(ans['company']['info']['phone'], '+7915-123-45-65')
 				self.assertEqual(ans['company']['info']['phone2'], '8915-123-45-65')
 				self.assertEqual(ans['company']['info']['description'], params['description'])
-			elif params == 2:
+			elif test_n == 2:
 				self.assertEqual(resp.status_code, 500)
 
 	def test_save_work_time(self):
@@ -204,6 +250,54 @@ class MyTest(TestCase):
 					ans['company']['workTime'][check_day],
 					json.loads(new_params[check_day]))
 
+		wrong_values = [
+			{
+				"rest": "some wrong value",
+				"start-h": 24,
+				"start-m": 61,
+				"fin-h": -1,
+				"fin-m": 999
+			}, {
+				"rest": "100",
+				"start-h": 24,
+				"start-m": 61,
+				"fin-h": -1,
+				"fin-m": 999
+			}, {
+				"totalshit": "over 8000",
+			}, {
+				"rest": True,
+				"start-h": 61,
+				"start-m": 10,
+				"fin-h": 9,
+				"fin-m": 23
+			}, {
+				"rest": True,
+				"start-h": 23,
+				"start-m": -5,
+				"fin-h": 9,
+				"fin-m": 23
+			}, {
+				"rest": True,
+				"start-h": 23,
+				"start-m": 3,
+				"fin-h": 63,
+				"fin-m": 23
+			}, {
+				"rest": True,
+				"start-h": 23,
+				"start-m": 3,
+				"fin-h": 23,
+				"fin-m": 9999
+			}
+		]
+		for wrong_value in wrong_values:
+			for day in days:
+				params_with_errors = params.copy()
+				params_with_errors[day] = json.dumps(wrong_value)
+				resp = self.client.post(url, params_with_errors)
+				self.assertEqual(resp.status_code, 500, resp.content)
+
 	def test_save_notification(self):
 		url = reverse('save-notification')
 		default_params = {
@@ -244,7 +338,14 @@ class MyTest(TestCase):
 			ans = json.loads(resp.content)
 			self.assertEqual(ans['user']['notification'], params)
 
+		# ставим хз что
+		default_params['push'] = "+"
+		default_params['sound'] = "enable"
+		resp = self.client.post(url, default_params)
+		self.assertEqual(resp.status_code, 500, resp.content)
+
 	def test_save_rent(self):
+		# два раза, т.к. при повторном сохранении производится стирание старой инфы
 		params = {
 			"address": "my address",
 			"metro": "Коломенская",
@@ -258,37 +359,123 @@ class MyTest(TestCase):
 					"cost": 100500}
 			])
 		}
-		# без логина - не должен пройти запрос
-		resp = self.client.post(reverse('save-rent'), params)
+
+		for i in range(2):
+			# без логина - не должен пройти запрос
+			resp = self.client.post(reverse('save-rent'), params)
+			self.assertEqual(resp.status_code, 401)
+
+			self.client.force_login(self.test_user)
+			# а с логином - должен
+			resp = self.client.post(reverse('save-rent'), params)
+			self.assertEqual(resp.status_code, 200, resp.content)
+
+			# получить настройки
+			resp = self.client.get(reverse('get-settings'))
+			self.assertEqual(resp.status_code, 200, resp.content)
+			ans = json.loads(resp.content)
+
+			# функция проверки полей delivery
+			def deliveries_equals(obj1, obj2):
+				for prop in ['address', 'metro', 'description']:
+					if obj1[prop] != obj2[prop]:
+						return False
+
+				for delivery_case in obj1['delivery']:
+					founded = False
+					for variant in obj2['delivery']:
+						if variant['name'] == delivery_case['name'] and variant['cost'] == delivery_case['cost']:
+							founded = True
+							break
+					if not founded:
+						return False
+				return True
+
+			sended = params.copy()
+			sended['delivery'] = json.loads(params["delivery"])
+
+			self.assertEqual(deliveries_equals(sended, ans['company']['rent']), True, str(params)+"\r\n-------\r\n" + str(ans))
+			self.page_available(reverse('logout'), 'post')
+
+		self.client.force_login(self.test_user)
+		wrong1 = params.copy()
+		wrong1['delivery'] = "[full shit //%}s"
+		wrong2 = params.copy()
+		wrong2['delivery'] = json.dumps({'this': 'is', 'not': 'array'})
+		wrong3 = params.copy()
+		wrong3['delivery'] = json.dumps([{'name': 'value', 'xxx': 100}])
+
+		wrong_params = [wrong1, wrong2, wrong3]
+		for w in wrong_params:
+			self.fails(reverse('save-rent'), 'post', 500, w)
+
+	def test_logout(self):
+		# проверка выхода
+		self.assertEqual(self.i_am_loggined(), False)
+		# без логина - должно не сработать ни POST
+		resp = self.client.post(reverse('logout'))
+		self.assertEqual(resp.status_code, 401, resp.content)
+		# ни GET
+		resp = self.client.get(reverse('logout'))
+		self.assertEqual(resp.status_code, 401, resp.content)
+
+		# c логином должен сработать только POST
+		self.client.force_login(self.test_user)
+		self.assertEqual(self.i_am_loggined(), True)
+		resp = self.client.get(reverse('logout'))
+		self.assertEqual(resp.status_code, 500, resp.content)
+
+		resp = self.client.post(reverse('logout'))
+		self.assertEqual(resp.status_code, 200, resp.content)
+		self.assertEqual(self.i_am_loggined(), False)
+
+	def test_demo(self):
+		self.client.get(reverse('demo'))
+		self.assertTemplateUsed('account/demo.html')
+
+	def test_password_set(self):
+		url = reverse('password-set')
+		resp = self.client.post(url)
+		self.assertEqual(resp.status_code, 401)
+
+		params = {
+			"password": "new-password"
+		}
+		resp = self.client.post(url, params)
 		self.assertEqual(resp.status_code, 401)
 
 		self.client.force_login(self.test_user)
-		# а с логином - должен
-		resp = self.client.post(reverse('save-rent'), params)
-		self.assertEqual(resp.status_code, 200, resp.content)
+		resp = self.client.post(url)
+		self.assertEqual(resp.status_code, 500, resp.content)
+		self.page_available(url, method="post", params=params)
+		self.page_available(reverse('logout'), method="post")
+		self.assertEqual(self.i_am_loggined(), False)
+		self.page_available(reverse('login'), method="post", params={
+			"user": "test-user",
+			"password": "new-password"
+		})
 
-		# получить настройки
-		resp = self.client.get(reverse('get-settings'))
-		self.assertEqual(resp.status_code, 200, resp.content)
-		ans = json.loads(resp.content)
+	def test_new_account(self):
+		# создание нового аккаунта
+		self.page_available(reverse('new-account'), method="post", params={
+			"login": "new-login",
+			"password": "new-password"
+		})
 
-		# функция проверки полей delivery
-		def deliveries_equals(obj1, obj2):
-			for prop in ['address', 'metro', 'description']:
-				if obj1[prop] != obj2[prop]:
-					return False
+		# залогинится не должно было бы
+		self.assertEqual(self.i_am_loggined(), False)
+		self.page_available(reverse('login'), method="post", params={
+			"user": "new-login",
+			"password": "new-password"
+		})
+		self.assertEqual(self.i_am_loggined(), True)
+		self.page_available(reverse('logout'), "post")
 
-			for delivery_case in obj1['delivery']:
-				founded = False
-				for variant in obj2['delivery']:
-					if variant['name'] == delivery_case['name'] and variant['cost'] == delivery_case['cost']:
-						founded = True
-						break
-				if not founded:
-					return False
-			return True
+		# повторное создание ползователя
+		self.fails(reverse('new-account'), "post", 500, {
+			"login": "new-login",
+			"password": "another-new-password"
+		})
 
-		sended = params.copy()
-		sended['delivery'] = json.loads(params["delivery"])
-
-		self.assertEqual(deliveries_equals(sended, ans['company']['rent']), True, str(params)+"\r\n-------\r\n" + str(ans))
+	def test_save_blacklist(self):
+		self.fails(reverse("save-blacklist"), "post", 501)

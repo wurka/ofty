@@ -4,10 +4,9 @@ from . import views
 
 urlpatterns = [
 	path('login', views.login, name='login'),
-	path('logout', views.logout),
-	path('login-page', views.login_page),
-	path('demo', views.demo),
-	path('password-set', views.password_set),
+	path('logout', views.logout, name='logout'),
+	path('demo', views.demo, name='demo'),
+	path('password-set', views.password_set, name='password-set'),
 	# path('delivery-set', views.delivery_set),
 	# path('delivery-get', views.delivery_get),
 	# path('time-set', views.time_set),
@@ -21,6 +20,6 @@ urlpatterns = [
 	path('save-info', views.save_info, name='save-info'),
 	path('save-work-time', views.save_work_time, name='save-work-time'),
 	path('save-notification', views.save_notification, name='save-notification'),
-	path('save-blacklist', views.save_blacklist),
+	path('save-blacklist', views.save_blacklist, name='save-blacklist'),
 	path('save-rent', views.save_rent, name='save-rent'),
 ]
