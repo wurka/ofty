@@ -59,7 +59,15 @@ def login(request):
 		try:
 			some_user = User.objects.get(username=nickname)
 			# нашли - создадим OftyUser и будем подключаться (пытаться по username)
-			ofty_user = OftyUser.objects.create(user=some_user, nickname=request.user.username)
+			# попробуем поискать OftyUser
+			try:
+				ofty_user = OftyUser.objects.get(user=some_user)
+			except OftyUser.DoesNotExist:  # такого нет - надо создать
+				ofty_user = OftyUser.objects.create(user=some_user, nickname=request.user.username)
+			except OftyUser.MultipleObjectsReturned:  # есть больше одного (база заполнена с ошибками) - удаление
+				OftyUser.objects.filter(user=some_user).delete()
+				ofty_user = OftyUser.objects.create(user=some_user, nickname=request.user.username)
+
 		except User.DoesNotExist:
 			# не нашли - ошибка
 			return HttpResponse("login failed", status=500)
