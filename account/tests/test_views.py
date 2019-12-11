@@ -109,7 +109,7 @@ class MyTest(TestCase):
 		self.assertEqual(resp.status_code, 500)
 
 	def test_build_phone_number(self):
-		tests = [
+		norm_tests = [
 			{
 				"src": "+79151234567",
 				"ans": "+7915-123-45-67"},
@@ -118,17 +118,17 @@ class MyTest(TestCase):
 				"ans": "+7915-123-45-67"},
 			{
 				"src": "8 915 123 45 67",
-				"ans": "8915-123-45-67"},
-			{
-				"src": "+7915123456",
-				"ans": ""},
-			{
-				"src": "0123",
-				"ans": ""}
+				"ans": "8915-123-45-67"}
 		]
-		for test in tests:
+		fail_tests = [
+			"+7915123456", "0123"
+		]
+		for test in norm_tests:
 			bld = build_phone_number(test['src'])
 			self.assertEqual(bld, test['ans'])
+
+		for test in fail_tests:
+			self.assertRaises(ValueError, build_phone_number, test)
 
 	def test_save_info(self):
 		# проверка /account/save-info

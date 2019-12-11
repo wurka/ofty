@@ -341,17 +341,20 @@ def get_settings(request):
 # если первым шёл "+", то он останется
 def build_phone_number(some_string):
 	if len(some_string) < 11:
-		return ""  # здесь не может уместиться номер телефона
+		ans=""  # здесь не может уместиться номер телефона
 
 	digits = "".join(re.findall(r'\d+', some_string))
 	if len(digits) < 11:
-		return ""  # номер телефона не валидный
+		ans = ""  # номер телефона не валидный
 	else:
 		d = digits[:11]
 		ans = ""
 		if some_string[0] == "+":
 			ans += "+"
 		ans += f"{d[:4]}-{d[4:7]}-{d[7:9]}-{d[9:11]}"
+
+	if ans == "":
+		raise ValueError(f"not valid telphone number: {some_string}")
 	return ans
 
 
@@ -369,7 +372,9 @@ def save_info(request):
 		filtered = re.match(
 			r'^(http://www\.|https://www\.|http://|https://)?[a-z0-9]+([\-.][a-z0-9]+)*\.['
 			r'a-z]{2,5}(:[0-9]{1,5})?(/.*)?$', request.POST['site'])
-		ofty_user.site = filtered.string if filtered is not None else ""
+		if filtered is None:
+			raise ValueError(f"site not valid: {request.POST['site']}")
+		ofty_user.site = filtered.string
 
 		ofty_user.city = City.objects.get(name=request.POST["city"])
 
@@ -382,6 +387,8 @@ def save_info(request):
 		ofty_user.save()
 	except City.DoesNotExist:
 		return HttpResponse(f'There is no specified city in base', status=500)
+	except ValueError as e:
+		return HttpResponse("wrong value: " + str(e))
 	return HttpResponse("OK")
 
 
