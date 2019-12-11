@@ -11,6 +11,7 @@ from io import BytesIO
 import os
 from datetime import datetime
 import re
+from time import sleep
 
 
 # Create your views here.
@@ -362,6 +363,7 @@ def build_phone_number(some_string):
 @post_with_parameters("name", "site", "city", "mail", "phone", "phone2", "description")
 def save_info(request):
 	django_user = request.user
+	sleep(1.0)
 	try:
 		try:
 			ofty_user = OftyUser.objects.get(user=django_user)
@@ -388,7 +390,7 @@ def save_info(request):
 	except City.DoesNotExist:
 		return HttpResponse(f'There is no specified city in base', status=500)
 	except ValueError as e:
-		return HttpResponse("wrong value: " + str(e))
+		return HttpResponse("wrong value: " + str(e), status=500)
 	return HttpResponse("OK")
 
 
