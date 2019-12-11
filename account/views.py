@@ -14,6 +14,18 @@ import re
 from time import sleep
 
 
+def get_ofty_user(user):
+	# удалить лишние записи в базе данных для этого пользователя
+	try:
+		ans = OftyUser.objects.get(user=user)
+	except OftyUser.DoesNotExist:
+		ans = OftyUser.objects.create(user=user)
+	except OftyUser.MultipleObjectsReturned:
+		OftyUser.objects.filter(user=user).delete()
+		ans = OftyUser.objects.create(user=user)
+	return ans
+
+
 # Create your views here.
 def logged_and_post(method):
 	def inner(request):
@@ -60,13 +72,7 @@ def login(request):
 			some_user = User.objects.get(username=nickname)
 			# нашли - создадим OftyUser и будем подключаться (пытаться по username)
 			# попробуем поискать OftyUser
-			try:
-				ofty_user = OftyUser.objects.get(user=some_user)
-			except OftyUser.DoesNotExist:  # такого нет - надо создать
-				ofty_user = OftyUser.objects.create(user=some_user, nickname=request.user.username)
-			except OftyUser.MultipleObjectsReturned:  # есть больше одного (база заполнена с ошибками) - удаление
-				OftyUser.objects.filter(user=some_user).delete()
-				ofty_user = OftyUser.objects.create(user=some_user, nickname=request.user.username)
+			ofty_user = get_ofty_user(some_user)
 
 		except User.DoesNotExist:
 			# не нашли - ошибка
@@ -217,10 +223,8 @@ def about_me(request):
 		ans["username"] = request.user.username
 		ans["anonymous"] = False
 
-		try:
-			ofty_user = OftyUser.objects.get(user=request.user)
-		except OftyUser.DoesNotExist:
-			ofty_user = OftyUser.objects.create(user=request.user)
+		ofty_user = get_ofty_user(request.user)
+
 		ans["stock-capacity"] = ofty_user.stock_size
 		ans["stock-occupied"] = len(Unit.objects.filter(owner=request.user, is_deleted=False))
 
@@ -231,10 +235,7 @@ def about_me(request):
 def get_settings(request):
 	django_user = request.user
 	uid = django_user.id
-	try:
-		ofty_user = OftyUser.objects.get(user=django_user)
-	except OftyUser.DoesNotExist:
-		ofty_user = OftyUser.objects.create(user=django_user)
+	ofty_user = get_ofty_user(django_user)
 	try:
 		wt = OftyUserWorkTime.objects.get(user=django_user)
 	except OftyUserWorkTime.DoesNotExist:
@@ -323,7 +324,7 @@ def get_settings(request):
 			"blackList": [
 				{
 					"id": bg.id,
-					"name": (OftyUser.objects.get(user_id=bg.id)).nickname
+					"name": ofty_user.nickname
 				} for bg in bad_guys
 			],
 			"rent": {
@@ -373,10 +374,7 @@ def save_info(request):
 	django_user = request.user
 	sleep(1.0)
 	try:
-		try:
-			ofty_user = OftyUser.objects.get(user=django_user)
-		except OftyUser.DoesNotExist:
-			ofty_user = OftyUser.objects.create(user=django_user)
+		ofty_user = get_ofty_user(django_user)
 
 		ofty_user.nickname = request.POST["name"]
 		filtered = re.match(
@@ -498,10 +496,7 @@ def save_work_time(request):
 @post_with_parameters("push", "sound", "orderSms", "timeSms", "orderMail", "timeMail")
 def save_notification(request):
 	django_user = request.user
-	try:
-		ofty_user = OftyUser.objects.get(user=django_user)
-	except OftyUser.DoesNotExist:
-		ofty_user = OftyUser.objects.create(user=django_user)
+	ofty_user = get_ofty_user(django_user)
 
 	try:
 		ofty_user.enable_push = flag(request.POST["push"])
@@ -525,10 +520,7 @@ def save_blacklist(request):
 def save_rent(request):
 	# TODO: address, metro, description
 	django_user = request.user
-	try:
-		ofty_user = OftyUser.objects.get(user=django_user)
-	except OftyUser.DoesNotExist:
-		ofty_user = OftyUser.objects.create(user=django_user)
+	ofty_user = get_ofty_user(django_user)
 
 	max_text_size = 500  # максимальное количество символов в текстовых полях
 
