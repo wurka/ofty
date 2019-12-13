@@ -301,12 +301,12 @@ class MyTest(TestCase):
 	def test_save_notification(self):
 		url = reverse('save-notification')
 		default_params = {
-			"push": "true",
-			"sound": "true",
-			"orderSms": "true",
-			"timeSms": "true",
-			"orderMail": "true",
-			"timeMail": "true"}
+			"push": True,
+			"sound": True,
+			"orderSms": True,
+			"timeSms": True,
+			"orderMail": True,
+			"timeMail": True}
 
 		# не должно работать без логина
 		resp = self.client.post(url)

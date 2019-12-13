@@ -103,13 +103,23 @@ def demo(request):
 	return render(request, 'account/demo.html', params)
 
 
+def validate_password(new_password):
+	if len(new_password) < 4:
+		raise ValueError("password must be at last 4 chars")
+
+
 @logged_and_post
 def password_set(request):
 	if "password" not in request.POST:
 		return HttpResponse("password not specified", status=500)
 	else:
+		new_password = request.POST["password"]
+		try:
+			validate_password(new_password)
+		except ValueError as e:
+			return HttpResponse(str(e), status=500)
 		oldname = request.user.username
-		request.user.set_password(request.POST["password"])
+		request.user.set_password(new_password)
 		request.user.save()
 		user = authenticate(request, username=oldname, password=request.POST["password"])
 		django_login(request, user)
@@ -122,10 +132,15 @@ def new_account(request):
 		User.objects.get(username=request.POST['login'])
 		return HttpResponse("login already exists", status=500)
 	except User.DoesNotExist:
+		new_password = request.POST['password']
+		try:
+			validate_password(new_password)
+		except ValueError as e:
+			return HttpResponse(str(e), status=500)
 		new_user = User.objects.create_user(
 			username=request.POST["login"],
 			email="",
-			password=request.POST['password'])
+			password=new_password)
 		OftyUser.objects.create(user=new_user, nickname=new_user.username)
 		return HttpResponse("OK")
 
