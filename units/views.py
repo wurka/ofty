@@ -7,7 +7,7 @@ import os
 from datetime import datetime
 from django.http import JsonResponse
 from django.contrib.sitemaps import Sitemap
-
+import sys
 
 def demo(request):
 	pars = {
@@ -51,6 +51,65 @@ def get_with_parameters(*args):
 	return decor
 
 
+def validate_int(where, key, min_val, max_val):
+	if key not in where:
+		raise ValueError(f"{key} not found")
+	try:
+		val = int(where[key])
+	except ValueError:
+		raise ValueError(f"{where['key']} not valid integer")
+	if val < min_val or val > max_val:
+		raise ValueError(f'{key} must be {min_val} to {max_val}, but {val} given')
+	return val
+
+
+def validate_json(where, key):
+	if key not in where:
+		raise ValueError(f"{key} not found")
+	try:
+		val = json.loads(where[key])
+	except json.JSONDecodeError as e:
+		raise ValueError(f'{key} not valid json object: ' + str(e))
+	return val
+
+
+def validate_float(where, key, min_val, max_val):
+	if key not in where:
+		raise ValueError(f"{key} not found")
+	try:
+		val = float(where[key])
+	except ValueError:
+		raise ValueError(f"{where['key']} not valid float")
+	if val < min_val or val > max_val:
+		raise ValueError(f'{key} must be {min_val} to {max_val}, but {val} given')
+	return val
+
+
+def validate_string(where, key, max_length):
+	if key not in where:
+		raise ValueError(f"{key} not found")
+	val = str(where[key])
+	if len(val) > max_length:
+		raise ValueError(f'max length for {key} ({max_length}) exceeded')
+	return val
+
+
+def validate_bool(where, key):
+	if key not in where:
+		raise ValueError(f"{key} not found")
+	if type(where[key]) is bool:
+		return where[key]
+	elif type(where[key]) is str:
+		if where[key].lower() == "true":
+			return True
+		elif where[key].lower() == "false":
+			return False
+		else:
+			raise ValueError(f'{key}: {where["key"]} can not be interpreted as bool')
+	else:
+		raise ValueError(f'{key}: type not supported: {type(where["key"])}')
+
+
 # Create your views here.
 @logged
 @post_with_parameters(
@@ -71,48 +130,24 @@ def add_new_unit(request):
 			# return HttpResponse("There is no photo1 - photo5 files", status=500)
 
 	try:
-		param = "weight"
-		weight = float(request.POST[param])
-		param = "bail"
-		bail = float(request.POST[param])
-		param = "count"
-		count = int(request.POST[param])
+		weight = validate_float(request.POST, 'weight', 0.001, 10_000)
+		bail = validate_float(request.POST, "bail", 0, 1_000_000)
+		count = validate_int(request.POST, 'count', 1, 1_000_000)
 
-		param = "set"
-		setid = int(request.POST[param]) if param in request.POST else 0
+		setid = validate_int(request.POST, 'set', 0, sys.maxsize) if 'set' in request.POST else 0
+		title = validate_string(request.POST, 'title', 50)
 
-		param = "title"
-		title = request.POST[param]
+		first_day_cost = validate_float(request.POST, 'first-day-cost', 0, 1_000_000)
+		rent_min_days = validate_int(request.POST, "rent-min-days", 1, 5_000)
+		day_cost = validate_float(request.POST, "day-cost", 1, 1_000_000)
 
-		param = "first-day-cost"
-		first_day_cost = float(request.POST[param])
-
-		param = "rent-min-days"
-		rent_min_days = int(request.POST[param])
-
-		param = "day-cost"
-		day_cost = float(request.POST[param])
-
-		param = "unit-group"
-		unit_group = int(request.POST[param])
-
-		param = "unit-colors"
-		unit_colors = json.loads(request.POST[param])
-
-		param = "parameters"
-		unit_parameters = json.loads(request.POST[param])
-
-		param = "unit-materials"
-		unit_materials = json.loads(request.POST[param])
-
-		param = "sets"
-		unit_sets = json.loads(request.POST[param])
-
-		param = "keywords"
-		unit_keywords = request.POST[param].split()
-
-		param = "description"
-		description = request.POST[param]
+		unit_group = validate_int(request.POST, "unit-group", 1, sys.maxsize)
+		unit_colors = validate_int(request.POST, "unit-colors", 1, sys.maxsize)
+		unit_parameters = validate_json(request.POST, "parameters")
+		unit_materials = validate_json(request.POST, "unit-materials")
+		unit_sets = validate_json(request.POST, "sets")
+		unit_keywords = request.POST["keywords"].split()
+		description = request.POST["description"]
 
 		print("creating new unit...")
 
@@ -126,7 +161,7 @@ def add_new_unit(request):
 		new_unit.day_cost = day_cost
 		new_unit.description = description
 		new_unit.owner = request.user
-		new_unit.published = json.loads(request.POST["published"])
+		new_unit.published = validate_bool(request.POST, "published")
 
 		# проверка на то, что группа, которую предлагает пользователь - существует
 		try:
@@ -239,8 +274,8 @@ def add_new_unit(request):
 
 		new_unit.build_search_string()  # сгенерировать строку для поиска
 
-	except ValueError:
-		return HttpResponse(f"Wrong value of parameter {param}", status=500)
+	except ValueError as e:
+		return HttpResponse(f"error in parameter: {str(e)}", status=500)
 	except Material.DoesNotExist:
 		return HttpResponse("Seems like specified material does not exists", status=500)
 

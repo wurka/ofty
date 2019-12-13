@@ -248,12 +248,12 @@ def get_settings(request):
 		"user": {
 			"nickname": ofty_user.nickname,
 			"notification": {
-				"push": json.dumps(ofty_user.enable_push),
-				"sound": json.dumps(ofty_user.enable_sound_alert),
-				"orderSms": json.dumps(ofty_user.enable_sms_new_order),
-				"timeSms": json.dumps(ofty_user.enable_sms_startstop),
-				"orderMail": json.dumps(ofty_user.enable_email_new_order),
-				"timeMail": json.dumps(ofty_user.enable_email_startstop)
+				"push": ofty_user.enable_push,
+				"sound": ofty_user.enable_sound_alert,
+				"orderSms": ofty_user.enable_sms_new_order,
+				"timeSms": ofty_user.enable_sms_startstop,
+				"orderMail": ofty_user.enable_email_new_order,
+				"timeMail": ofty_user.enable_email_startstop
 			},
 		},
 		"avatar": {
