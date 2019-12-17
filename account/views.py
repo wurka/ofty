@@ -565,5 +565,5 @@ def save_rent(request):
 				value=up["cost"]
 			)
 	except KeyError:
-		return HttpResponse("wrong data structure", status=500)
+		return HttpResponse("Wrong data structure", status=500)
 	return HttpResponse("OK")
