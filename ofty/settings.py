@@ -45,9 +45,11 @@ INSTALLED_APPS = [
 	'django.contrib.sessions',
 	'django.contrib.messages',
 	'django.contrib.staticfiles',
+	'corsheaders',
 ]
 
 MIDDLEWARE = [
+	'corsheaders.middleware.CorsMiddleware',
 	'django.middleware.security.SecurityMiddleware',
 	'django.contrib.sessions.middleware.SessionMiddleware',
 	'django.middleware.common.CommonMiddleware',
@@ -129,6 +131,25 @@ STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [
 	os.path.join(os.getcwd(), 'user_uploads')
+]
+
+CORS_ORIGIN_ALLOW_ALL = True
+CSRF_COOKIE_SECURE = True
+
+CORS_ORIGIN_WHITELIST = [
+	"http://localhost:8080",
+	"http://127.0.0.1:8080",
+	"http://127.0.0.1:9000",
+	"http://127.0.0.1:9000",
+	'http://localhost:8080',
+]
+
+CSRF_TRUSTED_ORIGINS = [
+	"localhost:8080",
+	"127.0.0.1:8080",
+	"127.0.0.1:9000",
+	"127.0.0.1:9000",
+	'localhost:8080',
 ]
 
 print("........ my current work dir is ........")

@@ -151,30 +151,43 @@ def save_avatar(request):
 
 	os.makedirs(avatar_file_folder, exist_ok=True)
 
-	if "avatar" not in request.FILES:
-		return HttpResponse("there is no <avatar> in FILES", status=500)
-	chunks = request.FILES["avatar"].chunks()
+	if "avatar71" not in request.FILES or "avatar170" not in request.FILES:
+		return HttpResponse("there is no <avatar71> and <avatar170> in FILES", status=500)
 
-	file = BytesIO()
-	for chunk in chunks:
-		file.write(chunk)
+	avatars = [{
+			'name': 'avatar71',
+			'size': 71,
+			'file-name': 'avatar-71.png'
+		}, {
+			'name': 'avatar170',
+			'size': 170,
+			'file-name': 'avatar-170.png'
+		}
+	]
 
-	ImageFile.LOAD_TRUNCATED_IMAGES = True
+	for avatar in avatars:
+		avatar_name = avatar['name']
+		avatar_size = avatar['size']
+		chunks = request.FILES[avatar_name].chunks()
 
-	img = Image.open(file)
-	width, height = img.size
-	min_size = min(width, height)
-	left = width/2.0 - min_size/2.0
-	top = height/2.0 - min_size/2.0
-	right = width/2.0 + min_size/2.0
-	bottom = height/2.0 + min_size/2.0
-	img = img.crop((left, top, right, bottom))
-	img_170 = img.resize((170, 170), Image.BICUBIC)
-	img_71 = img.resize((71, 71), Image.BICUBIC)
-	avatar_file_path = os.path.join(avatar_file_folder, "avatar-170.png")
-	img_170.save(avatar_file_path, "PNG")
-	avatar_file_path = os.path.join(avatar_file_folder, "avatar-71.png")
-	img_71.save(avatar_file_path, "PNG")
+		file = BytesIO()
+		for chunk in chunks:
+			file.write(chunk)
+
+		ImageFile.LOAD_TRUNCATED_IMAGES = True
+
+		img = Image.open(file)
+		width, height = img.size
+		min_size = min(width, height)
+		left = width/2.0 - min_size/2.0
+		top = height/2.0 - min_size/2.0
+		right = width/2.0 + min_size/2.0
+		bottom = height/2.0 + min_size/2.0
+		img = img.crop((left, top, right, bottom))
+
+		img = img.resize((avatar_size, avatar_size), Image.BICUBIC)
+		avatar_file_path = os.path.join(avatar_file_folder, avatar['file-name'])
+		img.save(avatar_file_path, "PNG")
 
 	return HttpResponse("OK")
 
