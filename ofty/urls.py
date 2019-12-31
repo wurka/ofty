@@ -22,6 +22,7 @@ from . import views
 from . import sitemaps
 
 urlpatterns = [
+	path('csrf/', views.csrf),
 	url(r'^admin/', admin.site.urls),
 	url(r'^units/', include('units.urls')),
 	url(r'^message/', include('message.urls')),
