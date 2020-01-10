@@ -86,6 +86,9 @@ class UnitPhoto(models.Model):
 	unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
 	file_name = models.TextField(default="")
 
+	def get_url(self):
+		return f"/images/unit/{self.file_name}"
+
 
 class UnitParameter(models.Model):
 	unit = models.ForeignKey(Unit, on_delete=models.CASCADE)

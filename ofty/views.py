@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.middleware.csrf import get_token
 from django.http import HttpResponse
 
+
 def statistic(request):
 	params = {
 		"count_users": len(User.objects.all()),
@@ -14,9 +15,18 @@ def statistic(request):
 
 
 def index(request):
+	x = 1
 	return render(request, "ofty/index.html")
 
 
 def csrf(request):
 	ans = get_token(request)
 	return HttpResponse(ans)
+
+
+def unit_search(request):
+	return render(request, 'ofty/unit-search.html')
+
+
+def unit_storage(request):
+	return render(request, 'ofty/unit-storage.html')

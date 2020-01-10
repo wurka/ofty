@@ -31,6 +31,7 @@ ALLOWED_HOSTS = ["127.0.0.1", "localhost", "zlaksa.ru"]
 # Application definition
 
 INSTALLED_APPS = [
+	'orders',
 	'units',
 	'message',
 	'shared',

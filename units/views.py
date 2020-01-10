@@ -8,6 +8,7 @@ from datetime import datetime
 from django.http import JsonResponse
 from django.contrib.sitemaps import Sitemap
 import sys
+from shared.methods import get_with_parameters, post_with_parameters
 
 def demo(request):
 	pars = {
@@ -25,39 +26,13 @@ def logged(method):
 	return inner
 
 
-def post_with_parameters(*args):
-	def decor(method):
-		def response(request):
-			if request.method != "POST":
-				return HttpResponse(f"please use POST request, not {request.method}", status=500)
-			for param in args:
-				if param not in request.POST:
-					return HttpResponse(f"there is no parameter {param}", status=500)
-			return method(request)
-		return response
-	return decor
-
-
-def get_with_parameters(*args):
-	def decor(method):
-		def response(request):
-			if request.method != "GET":
-				return HttpResponse(f"please use GET request, not {request.method}", status=500)
-			for param in args:
-				if param not in request.GET:
-					return HttpResponse(f"there is no parameter {param}", status=500)
-			return method(request)
-		return response
-	return decor
-
-
 def validate_int(where, key, min_val, max_val):
 	if key not in where:
 		raise ValueError(f"{key} not found")
 	try:
 		val = int(where[key])
 	except ValueError:
-		raise ValueError(f"{where['key']} not valid integer")
+		raise ValueError(f"{where[key]} not valid integer")
 	if val < min_val or val > max_val:
 		raise ValueError(f'{key} must be {min_val} to {max_val}, but {val} given')
 	return val
@@ -79,7 +54,7 @@ def validate_float(where, key, min_val, max_val):
 	try:
 		val = float(where[key])
 	except ValueError:
-		raise ValueError(f"{where['key']} not valid float")
+		raise ValueError(f"{where[key]} not valid float")
 	if val < min_val or val > max_val:
 		raise ValueError(f'{key} must be {min_val} to {max_val}, but {val} given')
 	return val
@@ -105,9 +80,9 @@ def validate_bool(where, key):
 		elif where[key].lower() == "false":
 			return False
 		else:
-			raise ValueError(f'{key}: {where["key"]} can not be interpreted as bool')
+			raise ValueError(f'{key}: {where[key]} can not be interpreted as bool')
 	else:
-		raise ValueError(f'{key}: type not supported: {type(where["key"])}')
+		raise ValueError(f'{key}: type not supported: {type(where[key])}')
 
 
 # Create your views here.
@@ -142,7 +117,7 @@ def add_new_unit(request):
 		day_cost = validate_float(request.POST, "day-cost", 1, 1_000_000)
 
 		unit_group = validate_int(request.POST, "unit-group", 1, sys.maxsize)
-		unit_colors = validate_int(request.POST, "unit-colors", 1, sys.maxsize)
+		unit_colors = validate_json(request.POST, "unit-colors")
 		unit_parameters = validate_json(request.POST, "parameters")
 		unit_materials = validate_json(request.POST, "unit-materials")
 		unit_sets = validate_json(request.POST, "sets")
@@ -373,49 +348,29 @@ def get_group_parameters(request):
 		return HttpResponse("some extract error", status=500)
 
 
-@logged
-def get_my_units(request):
-	last_id = 0
-	if "offset" in request.GET and "size" in request.GET and "filter" in request.GET:
-		try:
-			offset = int(request.GET["offset"])
-			size = int(request.GET["size"])
-			filt = request.GET["filter"].lower()
-			my_units = Unit.objects.filter(is_deleted=False, owner=request.user)
-			my_units = my_units.filter(search_string__icontains=filt).order_by('group__name')
-			my_units = my_units[offset: offset + size]
-
-			if "last-group-id" in request.GET:
-				try:
-					last_id = int(request.GET["last-group-id"])
-				except ValueError:
-					return HttpResponse("last-group-id parameter must be integer", status=500)
-
-		except ValueError:
-			return HttpResponse("offset and size must be integers", status=500)
-	else:
-		my_units = Unit.objects.filter(is_deleted=False, owner=request.user).order_by('group__name')
-
+def units_to_json(request, units, build_headers=False, last_id=0):
+	# преобразовать list<Unit> в json
+	# request нужен для построения absolute_url
 	ans = list()
+	for unit1 in units:
+		if build_headers:
+			if unit1.group.id != last_id:  # предыдущая группа была не такой, как эта
+				group = unit1.group
+				groups = list()
+				# формирование списка заголовков
+				while group is not None:
+					groups.insert(0, group)  # Нужен обратный порядок
+					group = group.parent
 
-	for unit1 in my_units:
-		if unit1.group.id != last_id:  # предыдущая группа была не такой, как эта
-			group = unit1.group
-			groups = list()
-			# формирование списка заголовков
-			while group is not None:
-				groups.insert(0, group)  # Нужен обратный порядок
-				group = group.parent
+				level = 1
+				for g in groups:
+					ans.append({
+						"type": f"header{level}",
+						"text": g.name
+					})
+					level += 1
 
-			level = 1
-			for g in groups:
-				ans.append({
-					"type": f"header{level}",
-					"text": g.name
-				})
-				level += 1
-
-			last_id = unit1.group.id
+				last_id = unit1.group.id
 
 		appended_unit = {
 			'type': 'unit',
@@ -510,7 +465,41 @@ def get_my_units(request):
 						f'/static/user_{userid}/unit_{unit1.id}/photo{i}.{img_format}')
 					break
 		ans.append(appended_unit)
+	return ans
 
+
+@logged
+def get_my_units(request):
+	last_id = 0
+	if "offset" in request.GET and "size" in request.GET and "filter" in request.GET:
+		try:
+			offset = int(request.GET["offset"])
+			size = int(request.GET["size"])
+			filt = request.GET["filter"].lower()
+			my_units = Unit.objects.filter(is_deleted=False, owner=request.user)
+			my_units = my_units.filter(search_string__icontains=filt).order_by('group__name')
+			my_units = my_units[offset: offset + size]
+
+			if "last-group-id" in request.GET:
+				try:
+					last_id = int(request.GET["last-group-id"])
+				except ValueError:
+					return HttpResponse("last-group-id parameter must be integer", status=500)
+
+		except ValueError:
+			return HttpResponse("offset and size must be integers", status=500)
+	else:
+		my_units = Unit.objects.filter(is_deleted=False, owner=request.user).order_by('group__name')
+
+	ans = units_to_json(request, my_units, build_headers=True, last_id=last_id)
+
+	return JsonResponse(ans, safe=False)
+
+
+@get_with_parameters()
+def get_all_units(request):
+	units = Unit.objects.filter(published=True)
+	ans = units_to_json(request, units)
 	return JsonResponse(ans, safe=False)
 
 

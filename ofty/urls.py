@@ -29,9 +29,19 @@ urlpatterns = [
 	url(r'^statistic/', views.statistic),
 	url(r'^account/', include('account.urls')),
 	url(r'^shared/', include('shared.urls')),
+	path('orders/', include('orders.urls')),
 	url(r'^$', views.index, name='index'),
 	path(
 		'sitemap.xml', sitemap, {'sitemaps': sitemaps.ofty_maps},
 		name='django.contrib.sitemaps.views.sitemaps'),
 	path('favicon.ico', RedirectView.as_view(url='/static/img/shared/favicon.ico'), name='favicon'),
+	# пути для js файлов (frontend)
+	path('office/account-settings', RedirectView.as_view(url='/static/dist/account-settings.js'), name='account-settings'),
+	path('office/calendar', RedirectView.as_view(url='/static/dist/calendar.js'), name='calendar'),
+	path('office/orders', RedirectView.as_view(url='/static/dist/orders.js'), name='orders'),
+	path('office/deals', RedirectView.as_view(url='/static/dist/deals.js'), name='deals'),
+	path('office/unit-storage', views.unit_storage, name='unit-storage'),
+	path('office/shop', RedirectView.as_view(url='/static/dist/shop.js'), name='shop'),
+	path('office/my-sets', RedirectView.as_view(url='/static/dist/my-sets.js'), name='my-sets'),
+	path('unit-search', views.unit_search, name='unit-search'),
 ]

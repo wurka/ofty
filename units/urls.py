@@ -25,6 +25,7 @@ urlpatterns = [
 	url(r'^get-groups$', views.get_groups),
 	url(r'^get-group-parameters$', views.get_group_parameters),
 	path('get-my-units', views.get_my_units, name='get-my-units'),
+	path('get-all-units', views.get_all_units, name='get-all-units'),
 	url(r'^ajax-test$', views.ajax_test),
 	url(r'^color-picker-source$', views.color_picker_source),
 	url(r'^materials-source$', views.materials_source),
