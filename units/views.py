@@ -384,7 +384,8 @@ def units_to_json(request, units, build_headers=False, last_id=0):
 			'day-cost': unit1.day_cost,
 			'unit-group': unit1.group.id,
 			'description': unit1.description,
-			'published': unit1.published
+			'published': unit1.published,
+			'owner': unit1.owner.id
 		}
 		# параметры (соответствующие группе)
 		unit_parameters = UnitParameter.objects.filter(unit=unit1)
