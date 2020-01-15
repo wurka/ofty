@@ -2,26 +2,26 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>AJAX test</title>
-    <script src="{% static 'js/shared/jquery-3.4.1.min.js' %} "></script>
-    <script src="{% static 'js/units/ajax-test.js' %}"></script>
+	<meta charset="UTF-8">
+	<title>AJAX test</title>
+	<script src="{% static 'js/shared/jquery-3.4.1.min.js' %} "></script>
+	<script src="{% static 'js/units/ajax-test.js' %}"></script>
 </head>
 <body>
-    <div class="url">
-        <input type="text" id="url" value="/units/get-groups" style="width: 400px">
-    </div>
-    <input type="button" id="run" value="run" style="margin: 10px 0 10px 0; width: 140px; display: inline-block;">
-    <div class="output">
-        ...
-    </div>
-    <ul id="recent">
-        <li>/units/get-groups</li>
-        <li>/units/get-groups?parentid=5</li>
-        <li>/units/get-group-parameters</li>
-        <li>/units/get-group-parameters?groupid=1</li>
-        <li></li>
-    </ul>
+	<div class="url">
+		<input type="text" id="url" value="/units/get-groups" style="width: 400px">
+	</div>
+	<input type="button" id="run" value="run" style="margin: 10px 0 10px 0; width: 140px; display: inline-block;">
+	<div class="output">
+		...
+	</div>
+	<ul id="recent">
+		<li>/units/get-groups</li>
+		<li>/units/get-groups?parentid=5</li>
+		<li>/units/get-group-parameters</li>
+		<li>/units/get-group-parameters?groupid=1</li>
+		<li></li>
+	</ul>
 
 </body>
 </html>

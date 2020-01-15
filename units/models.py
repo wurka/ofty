@@ -3,6 +3,8 @@ from datetime import datetime
 import pytz
 from django.urls import reverse
 from django.contrib.auth.models import User
+from django.contrib.staticfiles import finders
+import os
 
 
 # Create your models here.
@@ -86,8 +88,31 @@ class UnitPhoto(models.Model):
 	unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
 	file_name = models.TextField(default="")
 
-	def get_url(self):
-		return f"/images/unit/{self.file_name}"
+	@staticmethod
+	def get_url(user_id, unit_id, photo_number):
+		user_id = int(user_id)
+		unit_id = int(unit_id)
+		photo_number = int(photo_number)
+		return f"/static/img/shared/user_{user_id}/unit_{unit_id}/photo{photo_number}.jpg"
+
+	@staticmethod
+	def get_photos(unit):
+		""" получить все фотографии для товара unit"""
+		oid = unit.owner.id
+		uid = unit.id
+		photos = list()
+
+		for i in range(1, 6):
+			userid = oid  # !!!!! TODO: получать id активного пользователя
+			img_formats = ['jpg', 'jpeg', 'png']
+			for img_format in img_formats:
+				photo_path = os.path.join(
+					os.getcwd(), 'user_uploads', f'user_{userid}', f'unit_{unit.id}', f'photo{i}.{img_format}')
+				if os.path.exists(photo_path):
+					photos.append(  # request.build_absolute_uri(
+						f'/static/user_{oid}/unit_{uid}/photo{i}.{img_format}')
+					break
+		return photos
 
 
 class UnitParameter(models.Model):

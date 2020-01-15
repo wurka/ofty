@@ -9,6 +9,8 @@ from django.http import JsonResponse
 from django.contrib.sitemaps import Sitemap
 import sys
 from shared.methods import get_with_parameters, post_with_parameters
+from .models import UnitPhoto
+
 
 def demo(request):
 	pars = {
@@ -455,16 +457,9 @@ def units_to_json(request, units, build_headers=False, last_id=0):
 
 		# список фотографий (возможно, стоит сделать заполнение базы нормальное. это может быть быстрее, чем
 		# поиск по файловой системе наличия файла и решит проблемы со списком форматов)
-		for i in range(1, 6):
-			userid = 0  # !!!!! TODO: получать id активного пользователя
-			img_formats = ['jpg', 'jpeg', 'png']
-			for img_format in img_formats:
-				photo_path = os.path.join(
-					os.getcwd(), 'user_uploads', f'user_{userid}', f'unit_{unit1.id}', f'photo{i}.{img_format}')
-				if os.path.exists(photo_path):
-					appended_unit[f'photo{i}'] = request.build_absolute_uri(
-						f'/static/user_{userid}/unit_{unit1.id}/photo{i}.{img_format}')
-					break
+		for i, photo in enumerate(UnitPhoto.get_photos(unit1)):
+			appended_unit[f'photo{i}'] = request.build_absolute_uri(photo)
+
 		ans.append(appended_unit)
 	return ans
 
@@ -499,7 +494,7 @@ def get_my_units(request):
 
 @get_with_parameters()
 def get_all_units(request):
-	units = Unit.objects.filter(published=True)
+	units = Unit.objects.filter(published=True, is_deleted=False)
 	ans = units_to_json(request, units)
 	return JsonResponse(ans, safe=False)
 

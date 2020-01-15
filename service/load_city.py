@@ -7,19 +7,19 @@ print("load city: THIS script will delete ALL city data from database. Do it?")
 
 
 if input("for continue print y: ").lower() == "y":
-    City.objects.all().delete()
+	City.objects.all().delete()
 
-    cities = [
-        {
-            "name": "Москва"
-        },
-        {
-            "name": "Вязьма"
-        }
-    ]
+	cities = [
+		{
+			"name": "Москва"
+		},
+		{
+			"name": "Вязьма"
+		}
+	]
 
-    for c in cities:
-        City.objects.create(name=c["name"])
-        print(f"adding city {c['name']}")
+	for c in cities:
+		City.objects.create(name=c["name"])
+		print(f"adding city {c['name']}")
 
-    print(f"City total added: {len(cities)}")
+	print(f"City total added: {len(cities)}")

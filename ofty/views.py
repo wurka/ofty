@@ -15,7 +15,6 @@ def statistic(request):
 
 
 def index(request):
-	x = 1
 	return render(request, "ofty/index.html")
 
 
@@ -30,3 +29,15 @@ def unit_search(request):
 
 def unit_storage(request):
 	return render(request, 'ofty/unit-storage.html')
+
+
+def account_settings(request):
+	return render(request, 'ofty/account-settings.html')
+
+
+def unit_search(request):
+	return render(request, 'ofty/unit-search.html')
+
+
+def not_implemented(request):
+	return HttpResponse("not implemented yet", status=501)
