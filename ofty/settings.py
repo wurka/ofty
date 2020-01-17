@@ -134,6 +134,8 @@ STATICFILES_DIRS = [
 	os.path.join(os.getcwd(), 'user_uploads')
 ]
 
+STATIC_ROOT = os.path.join(BASE_DIR, "static/")
+
 CORS_ORIGIN_ALLOW_ALL = True
 CSRF_COOKIE_SECURE = False
 
