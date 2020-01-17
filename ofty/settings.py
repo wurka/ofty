@@ -25,7 +25,7 @@ SECRET_KEY = 'r)a%8cc0a(%pkm1!kp#83&j=77-_2!em*2k8c%vkrg%5k196(-'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost", "zlaksa.ru"]
+ALLOWED_HOSTS = ["127.0.0.1", "localhost", "zlaksa.ru", "ofty.ru"]
 
 
 # Application definition
