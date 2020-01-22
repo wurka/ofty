@@ -10,6 +10,8 @@ from django.contrib.sitemaps import Sitemap
 import sys
 from shared.methods import get_with_parameters, post_with_parameters
 from .models import UnitPhoto
+from io import BytesIO
+from PIL import Image
 
 
 def demo(request):
@@ -165,7 +167,7 @@ def add_new_unit(request):
 
 		# сохранение в файловый архив фотографий
 		# TODO: добавить полноценную проверку на тип фотографии (PILLOW)
-		folder = os.path.join("user_uploads", f"user_{0}", f"unit_{new_unit.id}")
+		folder = os.path.join("user_uploads", f"user_{request.user.id}", f"unit_{new_unit.id}")
 		os.makedirs(folder, exist_ok=True)
 
 		file_count = 0
@@ -173,10 +175,26 @@ def add_new_unit(request):
 			if file_name in request.FILES:
 				uploading = request.FILES[file_name]
 				extension = uploading.name.split(".")[-1]
+				# чтение в память (для обработки)
+				buffer = BytesIO()
+				for chunk in uploading.chunks():
+					buffer.write(chunk)
+				# обработка изображения
+				buffer.seek(0)
+				image = Image.open(buffer)
+				width, height = image.size
+				size = min(width, height)
+				image = image.crop((width/2 - size/2, height/2 - size/2, width/2 + size/2, height/2 + size/2))
+				image = image.resize((186, 186), Image.BILINEAR)
+
+				# запись на диск
 				destination = os.path.join(folder, f"{file_name}.{extension}")
-				with open(destination, "wb+") as file2write:
-					for chunk in uploading.chunks():
-						file2write.write(chunk)
+				image.save(destination, format='JPEG')
+
+				# with open(destination, "wb+") as file2write:
+				# for chunk in uploading.chunks():
+				# file2write.write(chunk)
+
 				file_count += 1
 		if file_count == 0:
 			return HttpResponse("Must be at least one photo file", status=500)
@@ -459,8 +477,8 @@ def units_to_json(request, units, build_headers=False, last_id=0):
 
 		# список фотографий (возможно, стоит сделать заполнение базы нормальное. это может быть быстрее, чем
 		# поиск по файловой системе наличия файла и решит проблемы со списком форматов)
-		for i, photo in enumerate(UnitPhoto.get_photos(unit1)):
-			appended_unit[f'photo{i}'] = request.build_absolute_uri(photo)
+		for i, photo in enumerate(UnitPhoto.get_photos(unit1, request)):
+			appended_unit[f'photo{i+1}'] = request.build_absolute_uri(photo)
 
 		ans.append(appended_unit)
 	return ans

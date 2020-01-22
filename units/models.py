@@ -103,14 +103,14 @@ class UnitPhoto(models.Model):
 		return f"/static/img/shared/user_{user_id}/unit_{unit_id}/photo{photo_number}.jpg"
 
 	@staticmethod
-	def get_photos(unit):
+	def get_photos(unit, request):
 		""" получить все фотографии для товара unit"""
 		oid = unit.owner.id
 		uid = unit.id
 		photos = list()
 
 		for i in range(1, 6):
-			userid = oid  # !!!!! TODO: получать id активного пользователя
+			userid = request.user.id
 			img_formats = ['jpg', 'jpeg', 'png']
 			for img_format in img_formats:
 				photo_path = os.path.join(
