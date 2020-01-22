@@ -448,7 +448,7 @@ def units_to_json(request, units, build_headers=False, last_id=0):
 			parent = parent.parent
 		appended_unit["group-info"] = {
 			"groups": json.dumps([g.name for g in unit_groups]),
-			"group-image": request.build_absolute_uri("/static/img/grouppreview/" + g.picture),
+			"group-image": request.build_absolute_uri("/static/img/grouppreview/" + unit1.group.picture),
 			"params": [{
 				"id": up.parameter.id,
 				"name": up.parameter.name,
