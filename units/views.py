@@ -188,7 +188,7 @@ def add_new_unit(request):
 				image = image.resize((186, 186), Image.BILINEAR)
 
 				# запись на диск
-				destination = os.path.join(folder, f"{file_name}.{extension}")
+				destination = os.path.join(folder, f"{file_name}.{'jpeg'}")
 				image.save(destination, format='JPEG')
 
 				# with open(destination, "wb+") as file2write:
@@ -477,7 +477,7 @@ def units_to_json(request, units, build_headers=False, last_id=0):
 
 		# список фотографий (возможно, стоит сделать заполнение базы нормальное. это может быть быстрее, чем
 		# поиск по файловой системе наличия файла и решит проблемы со списком форматов)
-		for i, photo in enumerate(UnitPhoto.get_photos(unit1, request)):
+		for i, photo in enumerate(UnitPhoto.get_unit_photos(unit1, request)):
 			appended_unit[f'photo{i+1}'] = request.build_absolute_uri(photo)
 
 		ans.append(appended_unit)

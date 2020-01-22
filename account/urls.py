@@ -7,6 +7,7 @@ urlpatterns = [
 	path('logout', views.logout, name='logout'),
 	path('demo', views.demo, name='demo'),
 	path('password-set', views.password_set, name='password-set'),
+	# path('generate-verification-password', name='generate-verification-password'),
 	# path('delivery-set', views.delivery_set),
 	# path('delivery-get', views.delivery_get),
 	# path('time-set', views.time_set),

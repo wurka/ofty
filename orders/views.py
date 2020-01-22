@@ -17,7 +17,10 @@ def get_my_orders(request):
 	photos = list()
 	for order in orders:
 		for ou in OrderUnit.objects.filter(order=order):
-			photos.extend(UnitPhoto.get_photos(ou.unit))
+			try:
+				photos.extend(UnitPhoto.get_unit_photos(ou.unit, request))
+			except Unit.DoesNotExist:
+				photos.append(request.build_absolute_uri("/static/img/shared/no_img.png"))
 
 	ans = [{
 		"status": order.status,
@@ -27,7 +30,8 @@ def get_my_orders(request):
 		"commentary": order.commentary,
 		"cost": order.cost,
 		"bail": order.bail,
-		"pictures": photos
+		"pictures": order.get_photos(request),
+		"owner": order.owner_info()
 	} for order in orders]
 
 	return JsonResponse(ans, safe=False)
@@ -48,8 +52,7 @@ def new_order(request):
 				type(x) is dict and
 				"id" in x and
 				"count" in x and
-				type(x['count']) is int
-					for x in u_array]):
+				type(x['count']) is int for x in u_array]):
 
 				raise ValueError("wrong unit object structure")
 
@@ -86,8 +89,8 @@ def new_order(request):
 				raise ValueError(f"there is not enough units with id: {su.id}")
 			ans_bail += su.bail
 			ans_cost += su.first_day_cost + (days - 1)*su.day_cost
-			su.count -= requested['count']
-			su.save()
+			# su.count -= requested['count']
+			# su.save()
 
 		return ans_bail, ans_cost
 

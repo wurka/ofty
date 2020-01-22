@@ -103,7 +103,7 @@ class UnitPhoto(models.Model):
 		return f"/static/img/shared/user_{user_id}/unit_{unit_id}/photo{photo_number}.jpg"
 
 	@staticmethod
-	def get_photos(unit, request):
+	def get_unit_photos(unit, request):
 		""" получить все фотографии для товара unit"""
 		oid = unit.owner.id
 		uid = unit.id

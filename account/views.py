@@ -114,8 +114,11 @@ def password_set(request):
 		return HttpResponse("OK")
 
 
-@post_with_parameters("login", "password")
+@post_with_parameters("login", "password", "username")
 def new_account(request):
+	# TODO: username -> nickname
+	# TODO: email заполнить как login
+	# TODO: ограничить длину login в 100 символов
 	try:
 		User.objects.get(username=request.POST['login'])
 		return HttpResponse("login already exists", status=500)
