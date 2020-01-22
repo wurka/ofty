@@ -318,7 +318,8 @@ def get_groups(request):
 	for group in groups:
 		ans.append({
 			"id": group.id,
-			"name": group.name
+			"name": group.name,
+			"group-image": request.build_absolute_uri("/static/img/grouppreview/" + group.picture),
 		})
 
 	ans = json.dumps(ans)
@@ -436,7 +437,7 @@ def units_to_json(request, units, build_headers=False, last_id=0):
 				'id': c.color.id,
 				# 'color_group': c.color.color_group,
 				'rgb_hex': c.color.rgb_hex,
-				'texture': request.build_absolute_uri(f"/static/img/units/texture/{c.color.texture}")
+				'texture': c.color.texture_url(request)
 			} for c in aunit_colors]
 
 		# информация о группах
@@ -447,6 +448,7 @@ def units_to_json(request, units, build_headers=False, last_id=0):
 			parent = parent.parent
 		appended_unit["group-info"] = {
 			"groups": json.dumps([g.name for g in unit_groups]),
+			"group-image": request.build_absolute_uri("/static/img/grouppreview/" + g.picture),
 			"params": [{
 				"id": up.parameter.id,
 				"name": up.parameter.name,
@@ -511,7 +513,7 @@ def color_picker_source(request):
 			{
 				'id': c.id,
 				'rgb_hex': c.rgb_hex,
-				'texture': request.build_absolute_uri("/static/img/units/texture/" + c.texture)
+				'texture': c.texture_url(request)
 			} for c in Color.objects.filter(color_group=group)
 		]
 

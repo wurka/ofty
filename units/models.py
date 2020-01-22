@@ -25,6 +25,13 @@ class Color(models.Model):
 	rgb_hex = models.TextField(default="FF00FF")
 	texture = models.TextField(default="blank.png")
 
+	def texture_url(self, request):
+		# get url of texture (request - for build url)
+		if self.texture == "":
+			return ""
+		else:
+			return request.build_absolute_uri("/static/img/units/texture/" + self.texture)
+
 
 class Material(models.Model):
 	name = models.TextField(default="new material")
