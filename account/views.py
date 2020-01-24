@@ -129,6 +129,9 @@ def password_set_with_code(request):
 		return HttpResponse("not valid user", status=500)
 
 	if ofty_user.verification_code_equals(request.POST['code']):
+		new_password = request.POST['password']
+		user.set_password(new_password)
+		user.save()
 		django_login(request, user)
 		return HttpResponse("OK")
 	else:
