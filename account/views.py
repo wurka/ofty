@@ -61,12 +61,12 @@ def login(request):
 	# except OftyUser.MultipleObjectsReturned:
 		# return HttpResponse("Multiaccount error", status=500)
 	except OftyUser.DoesNotExist:
-		# по никнейму не нашли - попытаемся найти по username
+		# по никнейму не нашли - попытаемся найти по почте
 		try:
-			some_user = User.objects.get(username=nickname)
+			some_user = User.objects.get(email=nickname)
 			# нашли - создадим OftyUser и будем подключаться (пытаться по username)
 			# попробуем поискать OftyUser
-			ofty_user = get_ofty_user(some_user)
+			ofty_user = OftyUser.get_user(some_user)
 
 		except User.DoesNotExist:
 			# не нашли - ошибка
@@ -624,7 +624,6 @@ def save_blacklist(request):
 @logged
 @post_with_parameters("address", "metro", "description", "delivery")
 def save_rent(request):
-	# TODO: address, metro, description
 	django_user = request.user
 	ofty_user = get_ofty_user(django_user)
 
