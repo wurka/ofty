@@ -155,5 +155,12 @@ CSRF_TRUSTED_ORIGINS = [
 	'localhost:8080',
 ]
 
+EMAIL_HOST = 'smtp.mail.ru'
+EMAIL_HOST_USER = "wurka_13@mail.ru"
+EMAIL_HOST_PASSWORD = 'mailPassword'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_USE_TLS = True
+
+
 print("........ my current work dir is ........")
 print(os.getcwd())

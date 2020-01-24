@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from location.models import City
+from datetime import datetime
 
 
 # Create your models here.
@@ -26,6 +27,17 @@ class OftyUser(models.Model):
 	phone = models.TextField(default="")
 	phone2 = models.TextField(default="")
 	company_description = models.TextField(default="")  # описание компании
+	verification_code = models.BinaryField(default=b'')  # md5 hash кода верификации
+	verification_code_until = models.DateTimeField(default=datetime(1970, 1, 1))
+
+	@staticmethod
+	def get_user(self, user):
+		# получить OftyUser по обычному пользователю (создать, если не создан)
+		try:
+			ans = OftyUser.objects.get(user=user)
+		except OftyUser.DoesNotExist:
+			ans = OftyUser.objects.create()
+		return ans
 
 
 class OftyUserWorkTime(models.Model):

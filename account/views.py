@@ -13,6 +13,10 @@ from datetime import datetime
 import re
 from time import sleep
 from shared.methods import post_with_parameters
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+import hashlib
 
 
 def get_ofty_user(user):
@@ -114,10 +118,36 @@ def password_set(request):
 		return HttpResponse("OK")
 
 
-@post_with_parameters('email')
+#@post_with_parameters('email')
 def generate_verification_password(request):
-	# TODO: implement
-	return HttpResponse("not implemented yet", status=501)
+	# TODO: replase get with post
+	try:
+		user = User.objects.get(email=request.GET['email'])
+		ofty_user = OftyUser.get_user(user)
+
+		code = 'VPSWD32'
+		params = {'verification_code': code}
+		hash = hashlib.md5(code)
+
+		html_message = render_to_string('account/verification_password_email.html', params)
+		plain_text = strip_tags(html_message)
+
+		send_mail(
+			'код для входа на сайт ofty',
+			plain_text,
+			"wurka_13@mail.ru",
+			(user.email,),
+			html_message=html_message,
+			fail_silently=False,
+			auth_user='wurka_13@mail.ru',
+			auth_password='mailPassword'
+		)
+	except User.DoesNotExist:
+		return HttpResponse("no user with this email", status=500)
+	except ConnectionRefusedError:
+		return HttpResponse("email not send: email server connection refused")
+
+	return HttpResponse("OK")
 
 
 @post_with_parameters('password')
@@ -126,26 +156,30 @@ def check_verification_password(request):
 	return HttpResponse("not implemented yet", status=501)
 
 
+def validate_nickname(nick):
+	if len(nick) > 100:
+		raise ValueError("invalid nickname")
+
+
 @post_with_parameters("login", "password", "username")
 def new_account(request):
-	# TODO: username -> nickname
-	# TODO: email заполнить как login
-	# TODO: ограничить длину login в 100 символов
-	# TODO: посмотреть про капчи
 	try:
 		User.objects.get(username=request.POST['login'])
 		return HttpResponse("login already exists", status=500)
 	except User.DoesNotExist:
 		new_password = request.POST['password']
+		new_login = request.POST['login']
+		nickname = validate_nickname(request.POST['username'])
+
 		try:
 			validate_password(new_password)
 		except ValueError as e:
 			return HttpResponse(str(e), status=500)
 		new_user = User.objects.create_user(
-			username=request.POST["login"],
-			email="",
+			username=new_login,
+			email=new_login,
 			password=new_password)
-		OftyUser.objects.create(user=new_user, nickname=new_user.username)
+		OftyUser.objects.create(user=new_user, nickname=nickname)
 		return HttpResponse("OK")
 
 
