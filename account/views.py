@@ -188,7 +188,7 @@ def check_verification_password(request):
 		return HttpResponse('not valid or expired verification code', status=500)
 
 	ans = {
-		'code': build_code()
+		'code': build_code(ofty_user)
 	}
 	return JsonResponse(ans)
 
