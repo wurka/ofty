@@ -127,7 +127,7 @@ def generate_verification_password(request):
 
 		code = 'VPSWD32'
 		params = {'verification_code': code}
-		hash = hashlib.md5(code)
+		hash = hashlib.md5(code.encode('utf-8'))
 
 		html_message = render_to_string('account/verification_password_email.html', params)
 		plain_text = strip_tags(html_message)

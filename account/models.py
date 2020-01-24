@@ -31,7 +31,7 @@ class OftyUser(models.Model):
 	verification_code_until = models.DateTimeField(default=datetime(1970, 1, 1))
 
 	@staticmethod
-	def get_user(self, user):
+	def get_user(user):
 		# получить OftyUser по обычному пользователю (создать, если не создан)
 		try:
 			ans = OftyUser.objects.get(user=user)
