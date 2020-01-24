@@ -9,7 +9,7 @@ import json
 from PIL import Image, ImageFile
 from io import BytesIO
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import re
 from time import sleep
 from shared.methods import post_with_parameters
@@ -17,6 +17,7 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 import hashlib
+import random
 
 
 def get_ofty_user(user):
@@ -118,22 +119,26 @@ def password_set(request):
 		return HttpResponse("OK")
 
 
-#@post_with_parameters('email')
+@post_with_parameters('email')
 def generate_verification_password(request):
 	# TODO: replase get with post
 	try:
-		user = User.objects.get(email=request.GET['email'])
+		user = User.objects.get(email=request.POST['email'])
 		ofty_user = OftyUser.get_user(user)
+		letters = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890"
 
-		code = 'VPSWD32'
+		code = "".join([letters[random.randint(0, len(letters)-1)] for i in range(6)])
 		params = {'verification_code': code}
-		hash = hashlib.md5(code.encode('utf-8'))
+
+		hash_code = hashlib.md5(code.encode('utf-8'))
+		ofty_user.verification_code = hash_code
+		ofty_user.verification_code_until = datetime.now() + timedelta(seconds=60*15)
 
 		html_message = render_to_string('account/verification_password_email.html', params)
 		plain_text = strip_tags(html_message)
 
 		send_mail(
-			'код для входа на сайт ofty',
+			'код для входа на сайт ofty.ru',
 			plain_text,
 			"wurka_13@mail.ru",
 			(user.email,),
