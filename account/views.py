@@ -1,5 +1,6 @@
 from django.shortcuts import render, HttpResponse
 from django.http import JsonResponse
+from django.contrib.auth import login as django_login
 from django.contrib.auth import authenticate, login as django_login, logout as django_logout
 from django.contrib.auth.models import User
 from account.models import OftyUser, OftyUserWorkTime, DeliveryCase, BlackListInstance
@@ -9,7 +10,7 @@ import json
 from PIL import Image, ImageFile
 from io import BytesIO
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import re
 from time import sleep
 from shared.methods import post_with_parameters
@@ -91,7 +92,7 @@ def demo(request):
 	params = {
 		'user_name': request.user.username if not request.user.is_anonymous else "Anonymous",
 		"user_id": request.user.id if not request.user.is_anonymous else "X",
-		"time": (datetime.now()-datetime(1970, 1, 1)).total_seconds()
+		"time": (datetime.now(timezone.utc)-datetime(1970, 1, 1)).total_seconds()
 	}
 	return render(request, 'account/demo.html', params)
 
@@ -111,28 +112,49 @@ def password_set(request):
 			validate_password(new_password)
 		except ValueError as e:
 			return HttpResponse(str(e), status=500)
-		oldname = request.user.username
+		old_name = request.user.username
 		request.user.set_password(new_password)
 		request.user.save()
-		user = authenticate(request, username=oldname, password=request.POST["password"])
+		user = authenticate(request, username=old_name, password=request.POST["password"])
 		django_login(request, user)
 		return HttpResponse("OK")
 
 
+@post_with_parameters('email', 'password', 'code')
+def password_set_with_code(request):
+	try:
+		user = User.objects.get(email=request.POST['email'])
+		ofty_user = OftyUser.objects.get(user=user)
+	except (User.DoesNotExist, OftyUser.DoesNotExist):
+		return HttpResponse("not valid user", status=500)
+
+	if ofty_user.verification_code_equals(request.POST['code']):
+		django_login(request, user)
+		return HttpResponse("OK")
+	else:
+		return HttpResponse("code not valid or expired", status=500)
+
+
+def build_code(ofty_user):
+	letters = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890"
+	code = "".join([letters[random.randint(0, len(letters) - 1)] for i in range(6)])
+
+	# сохранение кода для пользователя
+	hash_code = hashlib.md5(code.encode('utf-8'))
+	ofty_user.verification_code = hash_code.digest()
+	ofty_user.verification_code_until = datetime.now() + timedelta(seconds=60 * 15)
+	ofty_user.save()
+	return code
+
+
 @post_with_parameters('email')
 def generate_verification_password(request):
-	# TODO: replase get with post
 	try:
 		user = User.objects.get(email=request.POST['email'])
 		ofty_user = OftyUser.get_user(user)
-		letters = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890"
 
-		code = "".join([letters[random.randint(0, len(letters)-1)] for i in range(6)])
+		code = build_code(ofty_user)
 		params = {'verification_code': code}
-
-		hash_code = hashlib.md5(code.encode('utf-8'))
-		ofty_user.verification_code = hash_code
-		ofty_user.verification_code_until = datetime.now() + timedelta(seconds=60*15)
 
 		html_message = render_to_string('account/verification_password_email.html', params)
 		plain_text = strip_tags(html_message)
@@ -155,10 +177,20 @@ def generate_verification_password(request):
 	return HttpResponse("OK")
 
 
-@post_with_parameters('password')
+@post_with_parameters('email', 'password')
 def check_verification_password(request):
-	# TODO: implement
-	return HttpResponse("not implemented yet", status=501)
+	try:
+		ofty_user = OftyUser.objects.get(user__email=request.POST['email'])
+	except OftyUser.DoesNotExist:
+		return HttpResponse(f"there is no user with email {request.POST['email']}", status=500)
+
+	if not ofty_user.verification_code_equals(request.POST['password']):
+		return HttpResponse('not valid or expired verification code', status=500)
+
+	ans = {
+		'code': build_code()
+	}
+	return JsonResponse(ans)
 
 
 def validate_nickname(nick):

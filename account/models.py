@@ -1,7 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from location.models import City
-from datetime import datetime
+from datetime import datetime, timezone
+import hashlib
 
 
 # Create your models here.
@@ -38,6 +39,15 @@ class OftyUser(models.Model):
 		except OftyUser.DoesNotExist:
 			ans = OftyUser.objects.create()
 		return ans
+
+	def verification_code_equals(self, variant):
+		hash_code = hashlib.md5(variant.encode('utf-8'))
+		if self.verification_code == '' or self.verification_code != hash_code.digest():
+			return False
+
+		if self.verification_code_until < datetime.now(timezone.utc):  # прошло время годности кода
+			return False
+		return True
 
 
 class OftyUserWorkTime(models.Model):
