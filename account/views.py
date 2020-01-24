@@ -114,11 +114,24 @@ def password_set(request):
 		return HttpResponse("OK")
 
 
+@post_with_parameters('email')
+def generate_verification_password(request):
+	# TODO: implement
+	return HttpResponse("not implemented yet", status=501)
+
+
+@post_with_parameters('password')
+def check_verification_password(request):
+	# TODO: implement
+	return HttpResponse("not implemented yet", status=501)
+
+
 @post_with_parameters("login", "password", "username")
 def new_account(request):
 	# TODO: username -> nickname
 	# TODO: email заполнить как login
 	# TODO: ограничить длину login в 100 символов
+	# TODO: посмотреть про капчи
 	try:
 		User.objects.get(username=request.POST['login'])
 		return HttpResponse("login already exists", status=500)

@@ -166,7 +166,6 @@ def add_new_unit(request):
 			return HttpResponse("Wrong color id", status=500)
 
 		# сохранение в файловый архив фотографий
-		# TODO: добавить полноценную проверку на тип фотографии (PILLOW)
 		folder = os.path.join("user_uploads", f"user_{request.user.id}", f"unit_{new_unit.id}")
 		os.makedirs(folder, exist_ok=True)
 
