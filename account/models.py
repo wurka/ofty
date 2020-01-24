@@ -41,13 +41,18 @@ class OftyUser(models.Model):
 		return ans
 
 	def verification_code_equals(self, variant):
+		success = True
 		hash_code = hashlib.md5(variant.encode('utf-8'))
 		if self.verification_code == '' or self.verification_code != hash_code.digest():
-			return False
+			success = False
 
 		if self.verification_code_until < datetime.now(timezone.utc):  # прошло время годности кода
-			return False
-		return True
+			success = False
+
+		if success:
+			self.verification_code = ''  # добиваемся одноразовасти кода верификации
+
+		return success
 
 
 class OftyUserWorkTime(models.Model):
