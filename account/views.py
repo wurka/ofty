@@ -198,8 +198,13 @@ def check_verification_password(request):
 
 
 def validate_nickname(nick):
-	if len(nick) > 100:
-		raise ValueError("invalid nickname")
+	# nick - 2-30 символом латиницы или кириллицы
+	right = re.match(r'[a-zA-Zа-яА-Я0-9]{2,30}', nick)
+	if right:
+		if nick != right.group():  # совпадение неполное
+			raise ValueError("invalid nickname")
+	else:
+		raise ValueError('invalid nickname')
 	return nick
 
 
@@ -211,7 +216,10 @@ def new_account(request):
 	except User.DoesNotExist:
 		new_password = request.POST['password']
 		new_login = request.POST['login']
-		nickname = validate_nickname(request.POST['username'])
+		try:
+			nickname = validate_nickname(request.POST['username'])
+		except ValueError:
+			return HttpResponse("invalid nickname: must be [a-zA-Zа-яА-Я0-9]{2,30}", status=500)
 
 		try:
 			validate_password(new_password)
@@ -328,11 +336,10 @@ def about_me(request):
 		"stock-occupied": 0
 	}
 	if not request.user.is_anonymous:
-		ans["username"] = request.user.username
 		ans["anonymous"] = False
 
 		ofty_user = get_ofty_user(request.user)
-
+		ans["username"] = ofty_user.nickname
 		ans["stock-capacity"] = ofty_user.stock_size
 		ans["stock-occupied"] = len(Unit.objects.filter(owner=request.user, is_deleted=False))
 
