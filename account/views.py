@@ -100,6 +100,7 @@ def demo(request):
 def validate_password(new_password):
 	if len(new_password) < 4:
 		raise ValueError("password must be at last 4 chars")
+	return new_password
 
 
 @logged_and_post
@@ -199,6 +200,7 @@ def check_verification_password(request):
 def validate_nickname(nick):
 	if len(nick) > 100:
 		raise ValueError("invalid nickname")
+	return nick
 
 
 @post_with_parameters("login", "password", "username")
