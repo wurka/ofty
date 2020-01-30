@@ -19,6 +19,8 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 import hashlib
 import random
+from django.conf import settings
+import urllib
 
 
 def get_ofty_user(user):
@@ -54,8 +56,32 @@ def logged(method):
 
 @post_with_parameters('user', 'password')
 def login(request):
+	# проверка капчи (если нужно)
+	if settings.CAPTCHA['enable'] and 'token' in request.POST:
+		params = {
+			'secret': settings.CAPTCHA['secret-key'],
+			'response': request.POST['token'],
+		}
+		params = urllib.parse.urlencode(params).encode('ascii')
+		try:
+			with urllib.request.urlopen('https://www.google.com/recaptcha/api/siteverify', params) as file:
+				response = file.read(300)
+				try:
+					response = json.loads(response)
+					if response['success'] and response['action'] == 'register' and response['score'] > 0.5:
+						pass  # всё хорошо
+					else:
+						return HttpResponse("grfo, fckng bot", status=500)
+				except ValueError:
+					return HttpResponse("captcha error: wrong response from google", status=500)
+				except KeyError:
+					return HttpResponse("captcha error: invalid google response", status=500)
+		except urllib.error.HTTPError:
+			return HttpResponse("captcha error: google connection problem", status=500)
+
 	nickname = request.POST['user']
 	password = request.POST['password']
+
 	try:
 		ofty_user = OftyUser.objects.get(nickname=nickname)
 	# except OftyUser.MultipleObjectsReturned:
@@ -229,7 +255,27 @@ def new_account(request):
 			username=new_login,
 			email=new_login,
 			password=new_password)
-		OftyUser.objects.create(user=new_user, nickname=nickname)
+		new_ofty_user = OftyUser.objects.create(user=new_user, nickname=nickname)
+
+		# создание аватарок
+		source = os.path.join(os.getcwd(), 'shared', 'static', 'img', 'shared', 'no_img.png')
+		if not os.path.exists(source):
+			new_ofty_user.delete()
+			new_user.delete()
+			return HttpResponse("unable to find avatar source", status=500)
+		src = Image.open(source)
+		avatar71 = src.resize((71, 71), Image.BILINEAR)
+		avatar170 = src.resize((170, 170), Image.BILINEAR)
+		src.close()
+		d_folder = os.path.join(os.getcwd(), 'user_uploads', f'user_{new_user.id}')
+		d71 = os.path.join(d_folder, 'avatar-71.png')
+		d170 = os.path.join(d_folder, 'avatar-170.png')
+		avatar71.save(d71, format='PNG')
+		avatar71.close()
+		avatar170.save(d170, format='PNG')
+		avatar170.close()
+		src.close()
+
 		return HttpResponse("OK")
 
 
