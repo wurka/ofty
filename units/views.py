@@ -490,9 +490,9 @@ def get_my_units(request):
 		try:
 			offset = int(request.GET["offset"])
 			size = int(request.GET["size"])
-			filt = request.GET["filter"].lower()
+			filtration = request.GET["filter"].lower()
 			my_units = Unit.objects.filter(is_deleted=False, owner=request.user)
-			my_units = my_units.filter(search_string__icontains=filt).order_by('group__name')
+			my_units = my_units.filter(search_string__icontains=filtration).order_by('group__name')
 			my_units = my_units[offset: offset + size]
 
 			if "last-group-id" in request.GET:
