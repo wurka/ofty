@@ -268,6 +268,7 @@ def new_account(request):
 		avatar170 = src.resize((170, 170), Image.BILINEAR)
 		src.close()
 		d_folder = os.path.join(os.getcwd(), 'user_uploads', f'user_{new_user.id}')
+		os.makedirs(d_folder, exist_ok=True)
 		d71 = os.path.join(d_folder, 'avatar-71.png')
 		d170 = os.path.join(d_folder, 'avatar-170.png')
 		avatar71.save(d71, format='PNG')

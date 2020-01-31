@@ -28,7 +28,7 @@ DEBUG = True
 ALLOWED_HOSTS = ["127.0.0.1", "localhost", "zlaksa.ru", "ofty.ru"]
 
 CAPTCHA = {
-	'enable': True,
+	'enable': False,
 	'secret-key': '6LfvotIUAAAAAJsyumxSe0qTaFyIJA-jcS2gP7T9',
 	'client-key': '6LfvotIUAAAAAOuFrracBIL3ZCHNX1sy_UEqaxOj',
 }
