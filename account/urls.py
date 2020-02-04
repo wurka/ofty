@@ -25,4 +25,6 @@ urlpatterns = [
 	path('save-notification', views.save_notification, name='save-notification'),
 	path('save-blacklist', views.save_blacklist, name='save-blacklist'),
 	path('save-rent', views.save_rent, name='save-rent'),
+
+	path('get-companies', views.get_companies, name='get-companies')
 ]

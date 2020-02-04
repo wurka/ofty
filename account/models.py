@@ -30,6 +30,9 @@ class OftyUser(models.Model):
 	company_description = models.TextField(default="")  # описание компании
 	verification_code = models.BinaryField(default=b'')  # md5 hash кода верификации
 	verification_code_until = models.DateTimeField(default=datetime(1970, 1, 1))
+	rating = models.FloatField(default=0)
+	positive = models.IntegerField(default=0)
+	negative = models.IntegerField(default=0)
 
 	@staticmethod
 	def get_user(user):

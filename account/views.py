@@ -713,3 +713,17 @@ def save_rent(request):
 	except KeyError:
 		return HttpResponse("Wrong data structure", status=500)
 	return HttpResponse("OK")
+
+
+def get_companies(request):
+	owners_ids = set([o.owner.id for o in Unit.objects.all()])
+	users = OftyUser.objects.filter(user__id__in=owners_ids).order_by('rating').order_by('nickname')
+	ans = [{
+		'id': u.id,
+		'name': u.nickname,
+		'rating': u.rating,
+		'positive': u.positive,
+		'negative': u.negative,
+	} for u in users]
+
+	return JsonResponse(ans, safe=False)
