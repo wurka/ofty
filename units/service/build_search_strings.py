@@ -9,12 +9,12 @@ from datetime import datetime, timedelta
 print("rebuilding of search strings... please wait")
 units = Unit.objects.filter(is_deleted=False)
 total = len(units)
-now = datetime.now()
-start = datetime.now()
+now = datetime.utcnow()
+start = datetime.utcnow()
 for indx, unit in enumerate(units):
-	if datetime.now() - now > timedelta(seconds=0.3) or indx == total - 1:
+	if datetime.utcnow() - now > timedelta(seconds=0.3) or indx == total - 1:
 		print(f"done: {indx+1}/{total}")
-		now = datetime.now()
+		now = datetime.utcnow()
 	unit.build_search_string()
 
-print(f"all done in {int((datetime.now() - start).total_seconds())} seconds")
+print(f"all done in {int((datetime.utcnow() - start).total_seconds())} seconds")

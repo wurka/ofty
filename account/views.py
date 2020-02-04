@@ -172,7 +172,7 @@ def build_code(ofty_user):
 	# сохранение кода для пользователя
 	hash_code = hashlib.md5(code.encode('utf-8'))
 	ofty_user.verification_code = hash_code.digest()
-	ofty_user.verification_code_until = datetime.now() + timedelta(seconds=60 * 15)
+	ofty_user.verification_code_until = datetime.utcnow() + timedelta(seconds=60 * 15)
 	ofty_user.save()
 	return code
 

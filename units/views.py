@@ -103,9 +103,9 @@ def add_new_unit(request):
 	"""
 	must_be_files = ["photo1", "photo2", "photo3", "photo4", "photo5"]
 
-	for mfile in must_be_files:
-		if mfile in request.FILES:
-			print(f"accepted file <{mfile}>")
+	for mb_file in must_be_files:
+		if mb_file in request.FILES:
+			print(f"accepted file <{mb_file}>")
 			# return HttpResponse("There is no photo1 - photo5 files", status=500)
 
 	try:
@@ -206,11 +206,11 @@ def add_new_unit(request):
 			raise ValueError()
 		base_params = GroupParameter.objects.filter(owner=new_unit.group)
 		for base_param in base_params:
-			mykey = str(base_param.id)
-			if mykey not in unit_parameters:
-				return HttpResponse(f"There is no parameter with id {mykey} in unit_parameters", status=500)
+			my_key = str(base_param.id)
+			if my_key not in unit_parameters:
+				return HttpResponse(f"There is no parameter with id {my_key} in unit_parameters", status=500)
 			new_unit_param = UnitParameter(
-				value=unit_parameters[mykey],  # вот она синхронизация ввода и базы
+				value=unit_parameters[my_key],  # вот она синхронизация ввода и базы
 				parameter=base_param,
 				unit=new_unit
 			)
@@ -244,27 +244,29 @@ def add_new_unit(request):
 		if type(unit_keywords) is not list:
 			param = "keywords"
 			raise ValueError()
+
+		new_keywords = list()
 		for keyword in unit_keywords:
 			keyword = keyword.lower()
 			try:
-				base_keywrd = Keyword.objects.get(name=keyword)
-				new_unit_keyword = UnitKeyword(
-					unit=new_unit,
-					keyword=base_keywrd,
-					creation_time=datetime.now()
-				)
-				new_unit_keyword.save()
+				base_keyword = Keyword.objects.get(name=keyword)
+				if base_keyword not in new_keywords:
+					new_keywords.append(base_keyword)
+
 			except Keyword.DoesNotExist:  # такого ключа ещё нет в базе
 				new_keyword = Keyword.objects.create(
 					name=keyword,
-					creation_time=datetime.now()
+					creation_time=datetime.utcnow()
 				)
-				new_unit_keyword = UnitKeyword(
-					unit=new_unit,
-					keyword=new_keyword,
-					creation_time=datetime.now()
-				)
-				new_unit_keyword.save()
+				if new_keyword not in new_keywords:
+					new_keywords.append(new_keyword)
+			new_unit_keywords = [UnitKeyword(
+				unit=new_unit,
+				keyword=kw,
+				creation_time=datetime.utcnow()
+			) for kw in new_keywords]
+
+		UnitKeyword.objects.bulk_create(new_unit_keywords)
 
 		new_unit.build_search_string()  # сгенерировать строку для поиска
 
@@ -437,7 +439,7 @@ def units_to_json(request, units, build_headers=False, last_id=0):
 		]
 
 		# keywords (теги)
-		unit_keywords = UnitKeyword.objects.filter(unit=unit1)
+		unit_keywords = UnitKeyword.objects.filter(unit=unit1).distinct()
 		appended_unit['keywords-info'] = [
 			{
 				'id': k.keyword.id,
@@ -670,27 +672,29 @@ def update(request):
 		# keywords
 		unit_keywords = filter(None, request.POST["keywords"].split(" "))
 		UnitKeyword.objects.filter(unit=unit_one).delete()  # удаление старых ключевых слов
+
+		new_keywords = list()
 		for keyword in list(unit_keywords):
-			keyword = keyword.lower().strip()
+			keyword = keyword.lower()
 			try:
-				base_keywrd = Keyword.objects.get(name=keyword)
-				new_unit_keyword = UnitKeyword(
-					unit=unit_one,
-					keyword=base_keywrd,
-					creation_time=datetime.now()
-				)
-				new_unit_keyword.save()
+				base_keyword = Keyword.objects.get(name=keyword)
+				if base_keyword not in new_keywords:
+					new_keywords.append(base_keyword)
+
 			except Keyword.DoesNotExist:  # такого ключа ещё нет в базе
 				new_keyword = Keyword.objects.create(
 					name=keyword,
-					creation_time=datetime.now()
+					creation_time=datetime.utcnow()
 				)
-				new_unit_keyword = UnitKeyword(
-					unit=unit_one,
-					keyword=new_keyword,
-					creation_time=datetime.now()
-				)
-				new_unit_keyword.save()
+				if new_keyword not in new_keywords:
+					new_keywords.append(new_keyword)
+			new_unit_keywords = [UnitKeyword(
+				unit=unit_one,
+				keyword=kw,
+				creation_time=datetime.utcnow()
+			) for kw in new_keywords]
+
+		UnitKeyword.objects.bulk_create(new_unit_keywords)
 
 		unit_one.build_search_string()  # сгенерировать строку для поиска
 	except ValueError as e:

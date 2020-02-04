@@ -1,5 +1,7 @@
 /ofty/__pycache__/*.pyc
 /.idea
+!/.idea/dictionaries
+!/.idea/dictionaries/zalex.xml
 /units/__pycache__
 /units/migrations
 /shared/__pycache__

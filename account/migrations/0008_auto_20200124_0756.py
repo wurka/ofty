@@ -2,6 +2,7 @@
 
 import datetime
 from django.db import migrations, models
+import pytz
 
 
 class Migration(migrations.Migration):
@@ -19,6 +20,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='oftyuser',
             name='verification_code_until',
-            field=models.DateTimeField(default=datetime.datetime(1970, 1, 1, 0, 0)),
+            field=models.DateTimeField(default=datetime.datetime(1970, 1, 1, 0, 0, tzinfo=pytz.UTC)),
         ),
     ]

@@ -4,6 +4,7 @@ import datetime
 from django.conf import settings
 from django.db import migrations, models
 import django.db.models.deletion
+import pytz
 
 
 class Migration(migrations.Migration):
@@ -22,8 +23,8 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('status', models.TextField(default='init')),
                 ('commentary', models.TextField(default='')),
-                ('start_date', models.DateTimeField(default=datetime.datetime(1970, 1, 1, 0, 0))),
-                ('stop_date', models.DateTimeField(default=datetime.datetime(1970, 1, 2, 0, 0))),
+                ('start_date', models.DateTimeField(default=datetime.datetime(1970, 1, 1, 0, 0, tzinfo=pytz.UTC))),
+                ('stop_date', models.DateTimeField(default=datetime.datetime(1970, 1, 2, 0, 0, tzinfo=pytz.UTC))),
                 ('bail', models.FloatField(default=0)),
                 ('cost', models.FloatField(default=0)),
                 ('client', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='order_client', to=settings.AUTH_USER_MODEL)),

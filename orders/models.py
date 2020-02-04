@@ -3,6 +3,7 @@ from datetime import datetime
 from units.models import Unit, UnitPhoto
 from django.contrib.auth.models import User
 from account.models import OftyUser
+import pytz
 
 
 # Create your models here.
@@ -11,8 +12,8 @@ class Order(models.Model):
     client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='order_client')  # клиент (инициатор сделки)
     status = models.TextField(default="init")
     commentary = models.TextField(default="")
-    start_date = models.DateTimeField(default=datetime(1970, 1, 1))
-    stop_date = models.DateTimeField(default=datetime(1970, 1, 2))
+    start_date = models.DateTimeField(default=datetime(1970, 1, 1, tzinfo=pytz.UTC))
+    stop_date = models.DateTimeField(default=datetime(1970, 1, 2, tzinfo=pytz.UTC))
     bail = models.FloatField(default=0)
     cost = models.FloatField(default=0)
 

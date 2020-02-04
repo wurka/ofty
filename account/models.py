@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from location.models import City
 from datetime import datetime, timezone
 import hashlib
+import pytz
 
 
 # Create your models here.
@@ -29,7 +30,7 @@ class OftyUser(models.Model):
 	phone2 = models.TextField(default="")
 	company_description = models.TextField(default="")  # описание компании
 	verification_code = models.BinaryField(default=b'')  # md5 hash кода верификации
-	verification_code_until = models.DateTimeField(default=datetime(1970, 1, 1))
+	verification_code_until = models.DateTimeField(default=datetime(1970, 1, 1, tzinfo=pytz.UTC))
 	rating = models.FloatField(default=0)
 	positive = models.IntegerField(default=0)
 	negative = models.IntegerField(default=0)
@@ -49,7 +50,7 @@ class OftyUser(models.Model):
 		if self.verification_code == '' or self.verification_code != hash_code.digest():
 			success = False
 
-		if self.verification_code_until < datetime.now(timezone.utc):  # прошло время годности кода
+		if self.verification_code_until < datetime.utcnow(timezone.utc):  # прошло время годности кода
 			success = False
 
 		if success:

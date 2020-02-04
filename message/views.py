@@ -295,7 +295,7 @@ def new_message(request):
         author=request.user,
         message=request.POST["message"],
         conversation=convers,
-        creation_time=datetime.now()) for m in members]
+        creation_time=datetime.utcnow()) for m in members]
     Message.objects.bulk_create(msgs)
 
     return HttpResponse("OK")

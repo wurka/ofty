@@ -39,7 +39,7 @@ class Material(models.Model):
 
 class Keyword(models.Model):
 	name = models.TextField(default="empty key")
-	creation_time = models.DateTimeField(default=datetime(1970, 1, 1))
+	creation_time = models.DateTimeField(default=datetime(1970, 1, 1, tzinfo=pytz.UTC))
 
 
 class Unit(models.Model):
