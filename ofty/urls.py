@@ -30,6 +30,7 @@ urlpatterns = [
 	url(r'^account/', include('account.urls')),
 	url(r'^shared/', include('shared.urls')),
 	path('orders/', include('orders.urls')),
+	path('basket/', include('basket.urls')),
 	# url(r'^$', views.index, name='index'),
 	path(
 		'sitemap.xml', sitemap, {'sitemaps': sitemaps.ofty_maps},

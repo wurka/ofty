@@ -138,7 +138,3 @@ def new_order(request):
 	OrderUnit.objects.bulk_create(order_units)
 
 	return HttpResponse("OK")
-
-
-def add_to_basket(request):
-	return HttpResponse("not implemented yet", status=501)

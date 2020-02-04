@@ -36,6 +36,7 @@ CAPTCHA = {
 # Application definition
 
 INSTALLED_APPS = [
+	'basket',
 	'orders',
 	'units',
 	'message',
