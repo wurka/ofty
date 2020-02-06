@@ -9,8 +9,8 @@ class Basket(models.Model):
 
 	@staticmethod
 	def get_basket(basket_user):
-		if type(basket_user) is not User:
-			raise ValueError("only django.contrib.auth.models.User accepted")
+		# if type(basket_user) is not User:
+		# 	raise ValueError("only django.contrib.auth.models.User accepted")
 		baskets = Basket.objects.filter(user=basket_user)
 		if len(baskets) == 0:
 			new_basket = Basket.objects.create(user=basket_user)

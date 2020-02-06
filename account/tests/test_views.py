@@ -27,7 +27,7 @@ class MyTest(TestCase):
 			raise ValueError("uknown method " + method)
 		self.assertEqual(resp.status_code, status_code, resp.content)
 
-	def i_am_loggined(self):
+	def i_am_logged(self):
 		r = self.client.get(reverse('about-me'))
 		self.assertEqual(r.status_code, 200, r.content)
 		a = json.loads(r.content)
@@ -39,7 +39,7 @@ class MyTest(TestCase):
 
 	def test_login(self):
 		# проверка текущего пользователя (должен быть аноним)
-		self.assertEqual(self.i_am_loggined(), False)
+		self.assertEqual(self.i_am_logged(), False)
 
 		# попытка залогиниться
 		resp = self.client.post(reverse('login'), {
@@ -61,7 +61,7 @@ class MyTest(TestCase):
 		resp = self.client.get(reverse('about-me'))
 		self.assertEqual(resp.status_code, 200, resp.content)
 		ans = json.loads(resp.content)
-		self.assertEqual(self.i_am_loggined(), False)
+		self.assertEqual(self.i_am_logged(), False)
 
 		# заходим с ошибкой в пароле
 		resp = self.client.post(reverse('login'), {
@@ -69,7 +69,7 @@ class MyTest(TestCase):
 			'password': 'XXXXXX'
 		})
 		self.assertEqual(resp.status_code, 500, resp.content)
-		self.assertEqual(self.i_am_loggined(), False)
+		self.assertEqual(self.i_am_logged(), False)
 
 		# заходим с ошибкой в логине
 		resp = self.client.post(reverse('login'), {
@@ -77,7 +77,7 @@ class MyTest(TestCase):
 			'password': 'wrong-password'
 		})
 		self.assertEqual(resp.status_code, 500, resp.content)
-		self.assertEqual(self.i_am_loggined(), False)
+		self.assertEqual(self.i_am_logged(), False)
 
 	def test_get_settings(self):
 		# без логина страница недоступна
@@ -411,7 +411,7 @@ class MyTest(TestCase):
 
 	def test_logout(self):
 		# проверка выхода
-		self.assertEqual(self.i_am_loggined(), False)
+		self.assertEqual(self.i_am_logged(), False)
 		# без логина - должно не сработать ни POST
 		resp = self.client.post(reverse('logout'))
 		self.assertEqual(resp.status_code, 401, resp.content)
@@ -421,13 +421,13 @@ class MyTest(TestCase):
 
 		# c логином должен сработать только POST
 		self.client.force_login(self.test_user)
-		self.assertEqual(self.i_am_loggined(), True)
+		self.assertEqual(self.i_am_logged(), True)
 		resp = self.client.get(reverse('logout'))
 		self.assertEqual(resp.status_code, 500, resp.content)
 
 		resp = self.client.post(reverse('logout'))
 		self.assertEqual(resp.status_code, 200, resp.content)
-		self.assertEqual(self.i_am_loggined(), False)
+		self.assertEqual(self.i_am_logged(), False)
 
 	def test_demo(self):
 		self.client.get(reverse('demo'))
@@ -449,7 +449,7 @@ class MyTest(TestCase):
 		self.assertEqual(resp.status_code, 500, resp.content)
 		self.page_available(url, method="post", params=params)
 		self.page_available(reverse('logout'), method="post")
-		self.assertEqual(self.i_am_loggined(), False)
+		self.assertEqual(self.i_am_logged(), False)
 		self.page_available(reverse('login'), method="post", params={
 			"user": "test-user",
 			"password": "new-password"
@@ -463,12 +463,12 @@ class MyTest(TestCase):
 		})
 
 		# залогинится не должно было бы
-		self.assertEqual(self.i_am_loggined(), False)
+		self.assertEqual(self.i_am_logged(), False)
 		self.page_available(reverse('login'), method="post", params={
 			"user": "new-login",
 			"password": "new-password"
 		})
-		self.assertEqual(self.i_am_loggined(), True)
+		self.assertEqual(self.i_am_logged(), True)
 		self.page_available(reverse('logout'), "post")
 
 		# повторное создание ползователя

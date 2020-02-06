@@ -30,6 +30,6 @@ def get_with_parameters(*args):
 def logged(method):
 	def inner(request):
 		if request.user.is_anonymous:
-			return HttpResponse("you must be loggined in", status=401)
+			return HttpResponse("you must be logged in", status=401)
 		return method(request)
 	return inner

@@ -10,38 +10,42 @@ from account.models import OftyUser
 @logged
 @get_with_parameters()
 def get_content(request):
-	basket_units = [b.unit for b in BasketUnit.objects.filter(user=request.user).order_by('unit__owner')]
-	json_units = units_to_json(basket_units)
+	basket_units = [b.unit for b in BasketUnit.objects.filter(basket__user=request.user).order_by('unit__owner')]
+	json_units = units_to_json(request, basket_units)
 
-	units = list()
+	blocks = list()
 	last_owner = None
 	for i, unit in enumerate(basket_units):
 		if unit.owner != last_owner:
-			units.append({
-				'type': 'owner',
-				'data': {
+			# создаём новый блок
+			o_user = OftyUser.get_user(unit.owner)
+			blocks.append({
+				'owner': {
 					'id': unit.owner.id,
-					'name': OftyUser.get_user(unit.owner).nickname
-				}
+					'name': o_user.nickname,
+					'rent-commentary': o_user.rent_commentary
+				},
+				'units': []
 			})
+
 			last_owner = unit.owner
 		if unit.is_deleted:
-			units.append({
-				'type': 'unit-deleted',
+			blocks[-1]['units'].append({
+				'type': 'deleted-unit',
 				'data': ''
 			})
 		elif not unit.published:
-			units.append({
-				'type': 'unit-unpublished',
+			blocks[-1]['units'].append({
+				'type': 'unpublished-unit',
 				'data': ''
 			})
 		else:
-			units.append({
+			blocks[-1]['units'].append({
 				'type': 'unit',
 				'data': json_units[i]
 			})
 
-	return JsonResponse(units, safe=False)
+	return JsonResponse(blocks, safe=False)
 
 
 @logged
@@ -55,10 +59,11 @@ def add_unit(request):
 		return HttpResponse(f"unit not found, id={request.POST['unit-id']}", status=500)
 
 	try:
-		BasketUnit.objects.get(user=request.user, unit=unit)
+		BasketUnit.objects.get(basket__user=request.user, unit=unit)
 		return HttpResponse("unit already in basket", status=500)
 	except BasketUnit.DoesNotExist:
-		new_basket_unit = BasketUnit.objects.create(user=request.user, unit=unit)
+		basket = Basket.get_basket(request.user)
+		new_basket_unit = BasketUnit.objects.create(basket=basket, unit=unit)
 
 	return JsonResponse({'id': new_basket_unit.id})
 

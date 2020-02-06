@@ -39,7 +39,7 @@ def get_ofty_user(user):
 def logged_and_post(method):
 	def inner(request):
 		if request.user.is_anonymous:
-			return HttpResponse("you must be loggined in", status=401)
+			return HttpResponse("you must be logged in", status=401)
 		if request.method != "POST":
 			return HttpResponse("please use POST method", status=500)
 		return method(request)
@@ -49,7 +49,7 @@ def logged_and_post(method):
 def logged(method):
 	def inner(request):
 		if request.user.is_anonymous:
-			return HttpResponse("you must be loggined in", status=401)
+			return HttpResponse("you must be logged in", status=401)
 		return method(request)
 	return inner
 
@@ -526,7 +526,7 @@ def build_phone_number(some_string):
 		ans += f"{d[:4]}-{d[4:7]}-{d[7:9]}-{d[9:11]}"
 
 	if ans == "":
-		raise ValueError(f"not valid telphone number: {some_string}")
+		raise ValueError(f"not valid telephone number: {some_string}")
 	return ans
 
 
