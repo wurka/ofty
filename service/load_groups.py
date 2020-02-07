@@ -43,13 +43,15 @@ if input("for continue print y: ").lower() == "y":
 	GroupParameter.objects.create(owner=arki_pk, name='B', dimension='см')
 	GroupParameter.objects.create(owner=arki_pk, name='H', dimension='см')
 
-	gamakishizlongi = Group.objects.create(name='Гамаки и шизлонги')
+	gamakishizlongi = Group.objects.create(name='Гамаки и шезлонги')
 
-	gamakishizlongi_gamaki = Group.objects.create(name="Гамаки", picture="gamaki_i_shezlongi_gamaki.png", parent=gamakishizlongi)
+	gamakishizlongi_gamaki = Group.objects.create(
+		name="Гамаки", picture="gamaki_i_shezlongi_gamaki.png", parent=gamakishizlongi)
 	GroupParameter.objects.create(owner=gamakishizlongi_gamaki, name='А', dimension='см')
 	GroupParameter.objects.create(owner=gamakishizlongi_gamaki, name='B', dimension='см')
 
-	gamakishizlongi_shizlongi = Group.objects.create(name="Шезлонги", picture="gamaki_i_shezlongi_shezlongi .png", parent=arki)
+	gamakishizlongi_shizlongi = Group.objects.create(
+		name="Шезлонги", picture="gamaki_i_shezlongi_shezlongi .png", parent=gamakishizlongi)
 	GroupParameter.objects.create(owner=gamakishizlongi_shizlongi, name='А', dimension='см')
 	GroupParameter.objects.create(owner=gamakishizlongi_shizlongi, name='B', dimension='см')
 	GroupParameter.objects.create(owner=gamakishizlongi_shizlongi, name='H', dimension='см')
@@ -304,11 +306,11 @@ if input("for continue print y: ").lower() == "y":
 	GroupParameter.objects.create(owner=mebel_stulja_telephon, name='B', dimension='см')
 	GroupParameter.objects.create(owner=mebel_stulja_telephon, name='H', dimension='см')
 
-	mebel_stulja_сomp2 = Group.objects.create(
+	mebel_stulja_comp2 = Group.objects.create(
 		name="Призрак", picture="mebel_stulya_prizrak.png", parent=mebel_stulja)
-	GroupParameter.objects.create(owner=mebel_stulja_сomp2, name='A', dimension='см')
-	GroupParameter.objects.create(owner=mebel_stulja_сomp2, name='B', dimension='см')
-	GroupParameter.objects.create(owner=mebel_stulja_сomp2, name='H', dimension='см')
+	GroupParameter.objects.create(owner=mebel_stulja_comp2, name='A', dimension='см')
+	GroupParameter.objects.create(owner=mebel_stulja_comp2, name='B', dimension='см')
+	GroupParameter.objects.create(owner=mebel_stulja_comp2, name='H', dimension='см')
 
 	mebel_stulja_krug2 = Group.objects.create(
 		name="Режисёрские", picture="mebel_stulya_rejiserskie.png", parent=mebel_stulja)
