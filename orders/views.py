@@ -23,6 +23,7 @@ def get_my_orders(request):
 				photos.append(request.build_absolute_uri("/static/img/shared/no_img.png"))
 
 	ans = [{
+		'id': order.id,
 		"status": order.status,
 		"statusText": Order.get_status_text(order.status),
 		"start": f"{order.start_date.day:02}.{order.start_date.month:02}.{order.start_date.year}",
@@ -69,7 +70,7 @@ def new_order(request):
 	def get_date(text):
 		# format of text: YYYY.MM.DD
 		words = text.split(".")
-		date = datetime(int(words[0]), int(words[1]), int(words[2]))
+		date = datetime(int(words[2]), int(words[1]), int(words[0]))
 		return date.year, date.month, date.day
 
 	def calculate_bail_and_cost(some_units, requested_units, start, stop):
@@ -100,7 +101,7 @@ def new_order(request):
 		start_date = datetime(start_year, start_month, start_day)
 		stop_date = datetime(stop_year, stop_month, stop_day)
 	except ValueError:
-		return HttpResponse("wrong format of start/stop date. Must be YYYY.MM.DD")
+		return HttpResponse("wrong format of start/stop date. Must be DD.MM.YYYY", status=500)
 
 	units_ids = [int(x['id']) for x in units]
 	base_units = Unit.objects.filter(
