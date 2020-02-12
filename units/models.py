@@ -13,11 +13,18 @@ class Group(models.Model):
 	picture = models.TextField(default="group-picture.png")
 	parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE)
 
+	def __str__(self):
+		parent = self.parent.name if self.parent is not None else "-"
+		return f"name={self.name}, parent={parent}, pic={self.picture}"
+
 
 class GroupParameter(models.Model):
 	owner = models.ForeignKey(Group, on_delete=models.CASCADE)
 	name = models.TextField(default="no name")
 	dimension = models.TextField(default="")
+
+	def __str__(self):
+		return f"{self.name}={self.dimension}"
 
 
 class Color(models.Model):

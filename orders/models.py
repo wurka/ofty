@@ -26,6 +26,15 @@ class Order(models.Model):
         }
         return ans
 
+    def client_info(self):
+        ui = OftyUser.objects.get(user=self.client, is_deleted=False)
+        ans = {
+            "name": ui.nickname if ui.nickname != '' else self.owner.username,
+            "phone": ui.phone,
+            "phone2": ui.phone2
+        }
+        return ans
+
     def get_photos(self, request):
         # получить набор фотографий товаров (по одной фотке за каждый)
         order_photos = list()

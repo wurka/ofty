@@ -12,8 +12,11 @@ import itertools
 # Create your views here.
 @logged
 @get_with_parameters("page")
-def get_my_orders(request):
-	orders = Order.objects.filter(client=request.user).order_by("id")
+def get_my_orders(request, mode):
+	if mode == "order":
+		orders = Order.objects.filter(client=request.user).order_by("id")
+	elif mode == "deal":
+		orders = Order.objects.filter(owner=request.user).order_by("id")
 	photos = list()
 	for order in orders:
 		for ou in OrderUnit.objects.filter(order=order):
@@ -32,7 +35,8 @@ def get_my_orders(request):
 		"cost": order.cost,
 		"bail": order.bail,
 		"pictures": order.get_photos(request),
-		"owner": order.owner_info()
+		"owner": order.owner_info(),
+		"client": order.client_info(),
 	} for order in orders]
 
 	return JsonResponse(ans, safe=False)
