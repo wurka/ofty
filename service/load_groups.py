@@ -836,3 +836,38 @@ if input("for continue print y: ").lower() == "y":
 		name="Ткани", parent=tekstil, picture="tekstil_tkani.png")
 	GroupParameter.objects.create(owner=tekstil_tkani, name='A', dimension='см')
 	GroupParameter.objects.create(owner=tekstil_tkani, name='B', dimension='см')
+
+src = """
+Мебель
+	ebel.png
+	стулья
+		stul_zhidkiy.png
+		бержер
+			berzher.png
+			H=см
+			L=см
+
+Вазы
+"""
+
+
+def build_from_source(source):
+	level = 0
+	lines = source.splitlines()
+	last_level = -1
+	history = list()
+	for line in lines:
+		# пропуск пустых строк
+		if line.strip == "":
+			continue
+		spaces = len(line) - len(line.lstrip())
+		# это вложение
+		if spaces > last_level:
+			history.append(line)
+
+	# это фотография
+	if line.endswith('.png'):
+		if len(history) == 0:
+			raise ValueError("photo founded without parent group")
+
+
