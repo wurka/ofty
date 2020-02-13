@@ -12,7 +12,8 @@ import itertools
 # Create your views here.
 @logged
 @get_with_parameters("page")
-def get_my_orders(request, mode):
+def get_my_orders(request, *args, **kwargs):
+	mode = kwargs['mode']
 	if mode == "order":
 		orders = Order.objects.filter(client=request.user).order_by("id")
 	elif mode == "deal":
