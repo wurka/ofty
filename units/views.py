@@ -573,7 +573,15 @@ def get_sitemap(request):
 
 
 def unit(request, unit_id):
-	return HttpResponse(f"<div>there is unit with id: {unit_id}</div>")
+	try:
+		unit_one = Unit.objects.get(id=int(unit_id))
+		ans = units_to_json(request, [unit_one])
+	except Unit.DoesNotExist:
+		return HttpResponse(f"there is no unit with id {unit_id}", status=500)
+	except ValueError:
+		return HttpResponse(f"unit_id not valid integer value", status=500)
+
+	return JsonResponse(ans, safe=False)
 
 
 # декораторы не нужны, т.к. функция не доступна через URL
