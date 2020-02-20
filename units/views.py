@@ -1,6 +1,7 @@
 from django.shortcuts import HttpResponse, render
 from .models import Group, GroupParameter, Color, Unit, UnitColor, UnitParameter
 from .models import Material, UnitMaterial, Set, SetElement, Keyword, UnitKeyword
+from account.models import OftyUser
 import json
 import random
 import os
@@ -394,6 +395,7 @@ def units_to_json(request, units, build_headers=False, last_id=0):
 
 				last_id = unit1.group.id
 
+		owner = OftyUser.get_user(unit1.owner)
 		appended_unit = {
 			'type': 'unit',
 			'id': unit1.id,
@@ -407,7 +409,13 @@ def units_to_json(request, units, build_headers=False, last_id=0):
 			'unit-group': unit1.group.id,
 			'description': unit1.description,
 			'published': unit1.published,
-			'owner': unit1.owner.id
+			'owner': {
+				'id': unit1.owner.id,
+				'company-name': owner.nickname,
+				'phone': owner.phone,
+				'phone2': owner.phone2,
+				'sklad': owner.sklad
+			}
 		}
 		# параметры (соответствующие группе)
 		unit_parameters = UnitParameter.objects.filter(unit=unit1)
@@ -447,7 +455,7 @@ def units_to_json(request, units, build_headers=False, last_id=0):
 			} for k in unit_keywords
 		]
 
-		appended_unit['keywords'] = " ".join([u.keyword.name for u in unit_keywords])
+		appended_unit['keywords'] = [u.keyword.name for u in unit_keywords]
 
 		# цвета
 		aunit_colors = UnitColor.objects.filter(unit=unit1)
