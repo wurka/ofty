@@ -16,6 +16,7 @@ class Order(models.Model):
     stop_date = models.DateTimeField(default=datetime(1970, 1, 2, tzinfo=pytz.UTC))
     bail = models.FloatField(default=0)
     cost = models.FloatField(default=0)
+    is_deleted = False  # удаление
 
     def owner_info(self):
         ui = OftyUser.objects.get(user=self.owner, is_deleted=False)
@@ -59,6 +60,7 @@ class Order(models.Model):
             "tuned-by-client": "ожидание согласования с владельцем",
             "wait": "согласовано",
             "active": "активна",
+            "history": "в архиве",
         }
         if status in translate:
             return translate[status]

@@ -144,3 +144,37 @@ def new_order(request):
 	OrderUnit.objects.bulk_create(order_units)
 
 	return HttpResponse("OK")
+
+
+@logged
+@post_with_parameters('order_id')
+def reject_by_client(request):
+	try:
+		order_id = request.POST('order_id')
+	except ValueError:
+		return HttpResponse("order_id must be integer", status=500)
+
+	try:
+		order = Order.objects.get(id=order_id, client__id=request.user.id, is_deleted=False)
+		order.status = 'rejected-by-client'
+		order.save()
+	except Order.DoesNotExist:
+		return HttpResponse(f"your order with id {order_id} not found", status=500)
+	return HttpResponse("OK")
+
+
+@logged
+@post_with_parameters('order_id')
+def reject_by_owner(request):
+	try:
+		order_id = request.POST('order_id')
+	except ValueError:
+		return HttpResponse("order_id must be integer", status=500)
+
+	try:
+		order = Order.objects.get(id=order_id, owner__id=request.user.id, is_deleted=False)
+		order.status = 'rejected-by-owner'
+		order.save()
+	except Order.DoesNotExist:
+		return HttpResponse(f"your order with id {order_id} not found", status=500)
+	return HttpResponse("OK")
