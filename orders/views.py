@@ -150,7 +150,7 @@ def new_order(request):
 @post_with_parameters('order_id')
 def reject_by_client(request):
 	try:
-		order_id = request.POST('order_id')
+		order_id = int(request.POST['order_id'])
 	except ValueError:
 		return HttpResponse("order_id must be integer", status=500)
 
@@ -167,7 +167,7 @@ def reject_by_client(request):
 @post_with_parameters('order_id')
 def reject_by_owner(request):
 	try:
-		order_id = request.POST('order_id')
+		order_id = int(request.POST['order_id'])
 	except ValueError:
 		return HttpResponse("order_id must be integer", status=500)
 
@@ -177,4 +177,42 @@ def reject_by_owner(request):
 		order.save()
 	except Order.DoesNotExist:
 		return HttpResponse(f"your order with id {order_id} not found", status=500)
+	return HttpResponse("OK")
+
+
+@logged
+@post_with_parameters("order_id")
+def delete_by_client(request):
+	try:
+		oid = int(request.POST['order_id'])
+	except ValueError:
+		return HttpResponse('order_id must be integer', status=500)
+
+	try:
+		order = Order.objects.get(id=oid, is_deleted=False, client=request.user)
+	except Order.DoesNotExist:
+		return HttpResponse("unit not found", status=500)
+
+	order.is_deleted = True
+	order.is_deleted_by_client = True
+
+	return HttpResponse("OK")
+
+
+@logged
+@post_with_parameters("order_id")
+def delete_by_owner(request):
+	try:
+		oid = int(request.POST['order_id'])
+	except ValueError:
+		return HttpResponse('order_id must be integer', status=500)
+
+	try:
+		order = Order.objects.get(id=oid, is_deleted=False, owner=request.user)
+	except Order.DoesNotExist:
+		return HttpResponse("unit not found", status=500)
+
+	order.is_deleted = True
+	order.is_deleted_by_owner = True
+
 	return HttpResponse("OK")

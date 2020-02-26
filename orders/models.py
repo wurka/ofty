@@ -16,7 +16,9 @@ class Order(models.Model):
     stop_date = models.DateTimeField(default=datetime(1970, 1, 2, tzinfo=pytz.UTC))
     bail = models.FloatField(default=0)
     cost = models.FloatField(default=0)
-    is_deleted = False  # удаление
+    is_deleted = models.BooleanField(default=False)  # удаление
+    is_deleted_by_client = models.BooleanField(default=False)  # сделка удалена клиентом
+    is_deleted_by_owner = models.BooleanField(default=False)  # сделка удалена владельцем товара
 
     def owner_info(self):
         ui = OftyUser.objects.get(user=self.owner, is_deleted=False)
