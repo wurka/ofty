@@ -21,3 +21,5 @@
 /venv
 /orders/__pycache__
 /orders/migrations/__pycache__
+/basket/__pycache__/*.pyc
+/basket/migrations/__pycache__/*.pyc
