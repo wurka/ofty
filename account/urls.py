@@ -26,5 +26,6 @@ urlpatterns = [
 	path('save-blacklist', views.save_blacklist, name='save-blacklist'),
 	path('save-rent', views.save_rent, name='save-rent'),
 
-	path('get-companies', views.get_companies, name='get-companies')
+	path('get-companies', views.get_companies, name='get-companies'),
+	path('get-user-list', views.get_user_list, name='get-user-list'),
 ]

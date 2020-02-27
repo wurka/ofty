@@ -727,3 +727,14 @@ def get_companies(request):
 	} for u in users]
 
 	return JsonResponse(ans, safe=False)
+
+
+def get_user_list(request):
+	all_users = OftyUser.objects.all()
+	ans = [{
+		'id': user.id,
+		'username': user.user.username,
+		'nickname': user.nickname,
+	} for user in all_users]
+
+	return JsonResponse(ans, safe=False)

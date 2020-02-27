@@ -14,10 +14,11 @@ import itertools
 @get_with_parameters("page")
 def get_my_orders(request, *args, **kwargs):
 	mode = kwargs['mode']
+	orders = []
 	if mode == "order":
-		orders = Order.objects.filter(client=request.user).order_by("id")
+		orders = Order.objects.filter(client=request.user, is_deleted_by_client=False).order_by("id")
 	elif mode == "deal":
-		orders = Order.objects.filter(owner=request.user).order_by("id")
+		orders = Order.objects.filter(owner=request.user, is_deleted_by_owner=False).order_by("id")
 	photos = list()
 	for order in orders:
 		for ou in OrderUnit.objects.filter(order=order):
@@ -182,37 +183,23 @@ def reject_by_owner(request):
 
 @logged
 @post_with_parameters("order_id")
-def delete_by_client(request):
+def delete_order(request, by_client):
 	try:
 		oid = int(request.POST['order_id'])
 	except ValueError:
 		return HttpResponse('order_id must be integer', status=500)
 
 	try:
-		order = Order.objects.get(id=oid, is_deleted=False, client=request.user)
+		if by_client:
+			order = Order.objects.get(id=oid, is_deleted_by_client=False, client=request.user)
+			order.is_deleted_by_client = True
+		else:  # delete by owner
+			order = Order.objects.get(id=oid, is_deleted_by_owner=False, owner=request.user)
+			order.is_deleted_by_owner = True
 	except Order.DoesNotExist:
-		return HttpResponse("unit not found", status=500)
+		return HttpResponse("order not found", status=500)
 
 	order.is_deleted = True
-	order.is_deleted_by_client = True
-
-	return HttpResponse("OK")
-
-
-@logged
-@post_with_parameters("order_id")
-def delete_by_owner(request):
-	try:
-		oid = int(request.POST['order_id'])
-	except ValueError:
-		return HttpResponse('order_id must be integer', status=500)
-
-	try:
-		order = Order.objects.get(id=oid, is_deleted=False, owner=request.user)
-	except Order.DoesNotExist:
-		return HttpResponse("unit not found", status=500)
-
-	order.is_deleted = True
-	order.is_deleted_by_owner = True
+	order.save()
 
 	return HttpResponse("OK")
