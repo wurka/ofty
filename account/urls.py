@@ -28,4 +28,5 @@ urlpatterns = [
 
 	path('get-companies', views.get_companies, name='get-companies'),
 	path('get-user-list', views.get_user_list, name='get-user-list'),
+	path('about-user/<int:user_id>', views.about_user, name='about-user')
 ]

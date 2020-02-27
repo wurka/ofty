@@ -732,9 +732,52 @@ def get_companies(request):
 def get_user_list(request):
 	all_users = OftyUser.objects.all()
 	ans = [{
-		'id': user.id,
+		'id': user.user.id,
 		'username': user.user.username,
 		'nickname': user.nickname,
 	} for user in all_users]
 
 	return JsonResponse(ans, safe=False)
+
+
+def about_user(request, user_id):
+	try:
+		user = User.objects.get(id=user_id)
+		ofty_user = OftyUser.get_user(user)
+	except User.DoesNotExist:
+		return HttpResponse("user not found", status=500)
+
+	cases = DeliveryCase.objects.filter(user=user, is_deleted=False)
+	delivery_list = [{'name': case.name, 'value': case.value} for case in cases]
+	t = OftyUserWorkTime.objects.get(user=user)
+	times = [
+		f'{t.mon_start_h}:{t.mon_start_m:02} - {t.mon_stop_h}:{t.mon_stop_m:02}',
+		f'{t.tue_start_h}:{t.tue_start_m:02} - {t.tue_stop_h}:{t.tue_stop_m:02}',
+		f'{t.wed_start_h}:{t.wed_start_m:02} - {t.wed_stop_h}:{t.wed_stop_m:02}',
+		f'{t.thu_start_h}:{t.thu_start_m:02} - {t.thu_stop_h}:{t.thu_stop_m:02}',
+		f'{t.fri_start_h}:{t.fri_start_m:02} - {t.fri_stop_h}:{t.fri_stop_m:02}',
+		f'{t.sat_start_h}:{t.sat_start_m:02} - {t.sat_stop_h}:{t.sat_stop_m:02}',
+		f'{t.sun_start_h}:{t.sun_start_m:02} - {t.sun_stop_h}:{t.sun_stop_m:02}',
+	]
+	days = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+	enables = [t.mon_enable, t.tue_enable, t.wed_enable, t.thu_enable, t.fri_enable, t.sat_enable, t.sun_enable]
+	work_time_list = [{
+			'name': days[i],
+			'value':  times[i] if enables[i] else 'выходной'
+		} for i in range(7)]
+
+	ans = {
+		'name': ofty_user.nickname,
+		'site': ofty_user.site,
+		'regTime': f'{user.date_joined.day}.{user.date_joined.month:02}.{user.date_joined.year}',
+		'phones': [p for p in [ofty_user.phone, ofty_user.phone2] if p != ""],
+		'email': user.email,
+		'rating': ofty_user.rating,
+		'description': ofty_user.company_description,
+		'address': ofty_user.sklad,
+		'comment': ofty_user.rent_commentary,
+		'delivery': delivery_list,
+		'workTime': work_time_list
+	}
+
+	return JsonResponse(ans)
