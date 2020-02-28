@@ -13,6 +13,8 @@ from shared.methods import get_with_parameters, post_with_parameters
 from .models import UnitPhoto
 from io import BytesIO
 from PIL import Image
+import django.utils.timezone
+from django.contrib.auth.models import User
 
 
 def demo(request):
@@ -247,6 +249,7 @@ def add_new_unit(request):
 			raise ValueError()
 
 		new_keywords = list()
+		new_unit_keywords = list()
 		for keyword in unit_keywords:
 			keyword = keyword.lower()
 			try:
@@ -257,14 +260,14 @@ def add_new_unit(request):
 			except Keyword.DoesNotExist:  # такого ключа ещё нет в базе
 				new_keyword = Keyword.objects.create(
 					name=keyword,
-					creation_time=datetime.utcnow()
+					creation_time=django.utils.timezone.now()
 				)
 				if new_keyword not in new_keywords:
 					new_keywords.append(new_keyword)
 			new_unit_keywords = [UnitKeyword(
 				unit=new_unit,
 				keyword=kw,
-				creation_time=datetime.utcnow()
+				creation_time=django.utils.timezone.now()
 			) for kw in new_keywords]
 
 		UnitKeyword.objects.bulk_create(new_unit_keywords)
@@ -395,7 +398,11 @@ def units_to_json(request, units, build_headers=False, last_id=0):
 
 				last_id = unit1.group.id
 
-		owner = OftyUser.get_user(unit1.owner)
+		try:
+			owner = OftyUser.get_user(unit1.owner)
+		except User.DoesNotExist:
+			continue  # такого пользователя уже не существует
+
 		appended_unit = {
 			'type': 'unit',
 			'id': unit1.id,
@@ -690,6 +697,7 @@ def update(request):
 		UnitKeyword.objects.filter(unit=unit_one).delete()  # удаление старых ключевых слов
 
 		new_keywords = list()
+		new_unit_keywords = list()
 		for keyword in list(unit_keywords):
 			keyword = keyword.lower()
 			try:
@@ -700,14 +708,14 @@ def update(request):
 			except Keyword.DoesNotExist:  # такого ключа ещё нет в базе
 				new_keyword = Keyword.objects.create(
 					name=keyword,
-					creation_time=datetime.utcnow()
+					creation_time=django.utils.timezone.now()
 				)
 				if new_keyword not in new_keywords:
 					new_keywords.append(new_keyword)
 			new_unit_keywords = [UnitKeyword(
 				unit=unit_one,
 				keyword=kw,
-				creation_time=datetime.utcnow()
+				creation_time=django.utils.timezone.now()
 			) for kw in new_keywords]
 
 		UnitKeyword.objects.bulk_create(new_unit_keywords)

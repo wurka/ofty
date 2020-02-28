@@ -4,6 +4,7 @@ from location.models import City
 from datetime import datetime, timezone
 import hashlib
 import pytz
+import django.utils.timezone
 
 
 # Create your models here.
@@ -50,7 +51,7 @@ class OftyUser(models.Model):
 		if self.verification_code == '' or self.verification_code != hash_code.digest():
 			success = False
 
-		if self.verification_code_until < datetime.utcnow(timezone.utc):  # прошло время годности кода
+		if self.verification_code_until < django.utils.timezone.now():  # прошло время годности кода
 			success = False
 
 		if success:

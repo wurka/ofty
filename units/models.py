@@ -117,11 +117,11 @@ class UnitPhoto(models.Model):
 		photos = list()
 
 		for i in range(1, 6):
-			userid = request.user.id
+			user_id = unit.owner.id
 			img_formats = ['jpg', 'jpeg', 'png']
 			for img_format in img_formats:
 				photo_path = os.path.join(
-					os.getcwd(), 'user_uploads', f'user_{userid}', f'unit_{unit.id}', f'photo{i}.{img_format}')
+					os.getcwd(), 'user_uploads', f'user_{user_id}', f'unit_{unit.id}', f'photo{i}.{img_format}')
 				if os.path.exists(photo_path):
 					photos.append(  # request.build_absolute_uri(
 						f'/static/user_{oid}/unit_{uid}/photo{i}.{img_format}')

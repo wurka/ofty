@@ -17,6 +17,7 @@ from shared.methods import post_with_parameters
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+import django.utils.timezone
 import hashlib
 import random
 from django.conf import settings
@@ -172,7 +173,7 @@ def build_code(ofty_user):
 	# сохранение кода для пользователя
 	hash_code = hashlib.md5(code.encode('utf-8'))
 	ofty_user.verification_code = hash_code.digest()
-	ofty_user.verification_code_until = datetime.utcnow() + timedelta(seconds=60 * 15)
+	ofty_user.verification_code_until = django.utils.timezone.now() + timedelta(seconds=60 * 15)
 	ofty_user.save()
 	return code
 

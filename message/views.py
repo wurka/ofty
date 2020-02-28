@@ -5,8 +5,8 @@ import json
 from django.contrib.auth.models import User
 from .models import Conversation, ConversationMember, Message
 from django.http import JsonResponse
-from datetime import datetime
 from shared.methods import get_with_parameters, post_with_parameters
+import django.utils.timezone
 
 
 # Create your views here.
@@ -295,7 +295,7 @@ def new_message(request):
         author=request.user,
         message=request.POST["message"],
         conversation=convers,
-        creation_time=datetime.utcnow()) for m in members]
+        creation_time=django.utils.timezone.now()) for m in members]
     Message.objects.bulk_create(msgs)
 
     return HttpResponse("OK")
