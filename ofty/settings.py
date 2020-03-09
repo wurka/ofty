@@ -53,6 +53,7 @@ INSTALLED_APPS = [
 	'django.contrib.messages',
 	'django.contrib.staticfiles',
 	'corsheaders',
+	'channels',
 ]
 
 MIDDLEWARE = [
@@ -86,6 +87,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ofty.wsgi.application'
 
+ASGI_APPLICATION = "ofty.routing.application"
 
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases

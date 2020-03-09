@@ -2,3 +2,4 @@ pytz
 pillow
 django
 django_cors_headers
+channels
