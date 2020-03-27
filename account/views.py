@@ -386,6 +386,7 @@ def about_me(request):
 	if not request.user.is_anonymous:
 		ans["anonymous"] = False
 
+		ans["id"] = request.user.id
 		ofty_user = get_ofty_user(request.user)
 		ans["username"] = ofty_user.nickname
 		ans["stock-capacity"] = ofty_user.stock_size

@@ -35,6 +35,10 @@ class OftyUser(models.Model):
 	rating = models.FloatField(default=0)
 	positive = models.IntegerField(default=0)
 	negative = models.IntegerField(default=0)
+	units_in_basket = models.IntegerField(default=0)
+	new_messages = models.IntegerField(default=0)
+	new_orders = models.IntegerField(default=0)
+	new_deals = models.IntegerField(default=0)
 
 	@staticmethod
 	def get_user(user):

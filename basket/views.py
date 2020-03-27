@@ -5,6 +5,7 @@ from .models import Basket, BasketUnit
 from units.views import logged, get_with_parameters, post_with_parameters
 from units.models import Unit
 from account.models import OftyUser
+from ofty.consumers import UserUpdateConsumer
 
 
 @logged
@@ -65,6 +66,11 @@ def add_unit(request):
 		basket = Basket.get_basket(request.user)
 		new_basket_unit = BasketUnit.objects.create(basket=basket, unit=unit)
 
+		my_units = BasketUnit.objects.filter(basket=basket)
+		ofty_user = OftyUser.get_user(request.user)
+		ofty_user.units_in_basket = len(my_units)
+
+		UserUpdateConsumer.notifty_user(request.user)
 	return JsonResponse({'id': new_basket_unit.id})
 
 
@@ -82,6 +88,10 @@ def remove_unit(request):
 		basket = Basket.get_basket(request.user)
 		bu = BasketUnit.objects.get(basket=basket, unit=unit)
 		bu.delete()
+
+		my_units = BasketUnit.objects.filter(basket=basket)
+		ofty_user = OftyUser.get_user(request.user)
+		ofty_user.units_in_basket = len(my_units)
 	except BasketUnit.DoesNotExist:
 		return HttpResponse('unit not in basket', status=500)
 
