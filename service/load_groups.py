@@ -27,7 +27,7 @@ def build_from_source(source):
 		spaces = len(line) - len(line.lstrip())
 
 		# это фотография
-		if line.endswith('.png'):
+		if line.strip().endswith('.png'):
 			print("this is photo")
 			if len(history) == 0:
 				raise ValueError(f"[{line_index+1}]: photo founded without parent group")
