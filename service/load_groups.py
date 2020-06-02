@@ -33,7 +33,13 @@ def build_from_source(source):
 				raise ValueError(f"[{line_index+1}]: photo founded without parent group")
 			if len(history) <= spaces:
 				raise ValueError(f"[{line_index+1}]: invalid intention")
-			history[spaces].picture = line.strip()
+
+			# применить картинку
+			if line.strip().endswith('_razm.png'):  # признак того, что картинка с указанием размеров
+				history[spaces].size_picture = line.strip()
+				history[spaces].active = True
+			else:
+				history[spaces].picture = line.strip()
 			history[spaces].save()
 
 		# это параметр

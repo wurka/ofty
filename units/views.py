@@ -343,6 +343,8 @@ def get_groups(request):
 			"id": group.id,
 			"name": group.name,
 			"group-image": request.build_absolute_uri("/static/img/grouppreview/" + group.picture),
+			"group-size-image": request.build_absolute_uri("/static/img/grouppreview/" + group.size_picture),
+			"active": group.active
 		})
 
 	ans = json.dumps(ans)
@@ -362,7 +364,9 @@ def get_group_parameters(request):
 		} for p in pars]
 
 		ans = {
+			"active": json.dumps(group.active),
 			"picture": request.build_absolute_uri("/static/img/grouppreview/" + group.picture),
+			"sizepicture": request.build_absolute_uri("/static/img/grouppreview/" + group.size_picture),
 			"parameters": json.dumps(parameters)
 		}
 		return HttpResponse(json.dumps(ans))

@@ -10,7 +10,9 @@ import os
 # Create your models here.
 class Group(models.Model):
 	name = models.TextField(default="no name")
-	picture = models.TextField(default="group-picture.png")
+	picture = models.TextField(default="group-picture.png")  # картинка группы
+	size_picture = models.TextField(default="group-size-picture.png")  # картинка с размерами
+	active = models.BooleanField(default=False)  # можно ли добавлять товары такой группы
 	parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE)
 
 	def __str__(self):
