@@ -154,3 +154,19 @@ class SetElement(models.Model):
 	unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
 
 
+class DayCost(models.Model):
+	"""
+	Тарифный план на день
+	"""
+	duration = models.IntegerField(default=0)  # минимальная длительность при которой работает план
+	cost = models.FloatField(default=0)  # стоимость одного дня
+	unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
+
+
+class HourCost(models.Model):
+	"""
+	Тарифный план на час
+	"""
+	duration = models.IntegerField(default=0)  # минимальная длительность аренды для этого плана
+	cost = models.FloatField(default=0)  # стоимость одного часа
+	unit = models.ForeignKey(Unit, on_delete=models.CASCADE)

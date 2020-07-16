@@ -64,6 +64,6 @@ if input("for continue print y: ").lower() == "y":
 	for g in group_5:
 		Color.objects.create(
 			color_group="group5",
-			rgb_hex=g,
+			rgb_hex="",
 			texture=g
 		)

@@ -95,7 +95,7 @@ def validate_bool(where, key):
 # Create your views here.
 @logged
 @post_with_parameters(
-	"weight", "bail", "count", "title", "first-day-cost", "rent-min-days", "day-cost",
+	"weight", "bail", "count", "title", "costs",
 	"unit-group", "unit-colors", "parameters",
 	"unit-materials", "sets", "keywords", "description", "published")
 def add_new_unit(request):
@@ -119,12 +119,9 @@ def add_new_unit(request):
 		setid = validate_int(request.POST, 'set', 0, sys.maxsize) if 'set' in request.POST else 0
 		title = validate_string(request.POST, 'title', 50)
 
-		first_day_cost = validate_float(request.POST, 'first-day-cost', 0, 1_000_000)
-		rent_min_days = validate_int(request.POST, "rent-min-days", 1, 5_000)
-		day_cost = validate_float(request.POST, "day-cost", 1, 1_000_000)
-
 		unit_group = validate_int(request.POST, "unit-group", 1, sys.maxsize)
 		unit_colors = validate_json(request.POST, "unit-colors")
+		unit_costs = validate_json(request.POST, 'costs')
 		unit_parameters = validate_json(request.POST, "parameters")
 		unit_materials = validate_json(request.POST, "unit-materials")
 		unit_sets = validate_json(request.POST, "sets")
@@ -168,6 +165,16 @@ def add_new_unit(request):
 		except Color.DoesNotExist:
 			return HttpResponse("Wrong color id", status=500)
 
+		# проверка и сохранение тарифных планов
+		try:
+			for cost in unit_costs:
+				if 'type' not in cost or 'duration' not in cost or 'cost' not in cost:
+					raise ValueError("cost must be like {type: day, duration: 1, cost: 100}")
+
+		except ValueError as ve:
+			raise ve
+
+
 		# сохранение в файловый архив фотографий
 		folder = os.path.join("user_uploads", f"user_{request.user.id}", f"unit_{new_unit.id}")
 		os.makedirs(folder, exist_ok=True)
@@ -205,7 +212,7 @@ def add_new_unit(request):
 
 		# валидация и сохранения UnitParameters
 		if type(unit_parameters) is not dict:
-			param = "parameters"
+			# param = "parameters"
 			raise ValueError()
 		base_params = GroupParameter.objects.filter(owner=new_unit.group)
 		for base_param in base_params:
