@@ -135,9 +135,6 @@ def add_new_unit(request):
 		new_unit.bail = bail
 		new_unit.count = count
 		new_unit.title = title
-		new_unit.first_day_cost = first_day_cost
-		new_unit.rent_min_days = rent_min_days
-		new_unit.day_cost = day_cost
 		new_unit.description = description
 		new_unit.owner = request.user
 		new_unit.published = validate_bool(request.POST, "published")
@@ -198,6 +195,7 @@ def add_new_unit(request):
 
 				# запись на диск
 				destination = os.path.join(folder, f"{file_name}.{'jpeg'}")
+				image = image.convert('RGB')
 				image.save(destination, format='JPEG')
 
 				# with open(destination, "wb+") as file2write:
@@ -421,9 +419,6 @@ def units_to_json(request, units, build_headers=False, last_id=0):
 			'bail': unit1.bail,
 			'count': unit1.count,
 			'title': unit1.title,
-			'first-day-cost': unit1.first_day_cost,
-			'rent-min-days': unit1.rent_min_days,
-			'day-cost': unit1.day_cost,
 			'unit-group': unit1.group.id,
 			'description': unit1.description,
 			'published': unit1.published,

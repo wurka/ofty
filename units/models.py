@@ -57,9 +57,6 @@ class Unit(models.Model):
 	bail = models.FloatField(default=0)  # рублей, залог
 	count = models.FloatField(default=0)  # шт., количество
 	title = models.TextField(default="no title")  # заголовок (название)
-	first_day_cost = models.FloatField(default=0)  # цена за первый день аренды
-	rent_min_days = models.IntegerField(default=0)  # минимальное количество дней аренды
-	day_cost = models.FloatField(default=0)  # цена дня аренды
 	group = models.ForeignKey(Group, on_delete=models.CASCADE)  # группа товара
 	description = models.TextField(default="no description")
 	is_deleted = models.BooleanField(default=False)  # True => Элемент удалён
