@@ -343,6 +343,8 @@ def get_groups(request):
 	else:  # не указан родитель - отдать <root>
 		groups = Group.objects.filter(parent=None)
 
+	groups = groups.order_by('name')
+
 	for group in groups:
 		ans.append({
 			"id": group.id,
