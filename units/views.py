@@ -735,3 +735,15 @@ def update(request):
 		return HttpResponse("wrong object structure: " + str(e), status=500)
 
 	return HttpResponse("OK")
+
+
+# получить список все своих наборов
+def my_sets(request):
+	sets = Set.objects.filter(owner=request.user, is_deleted=False)
+	ans = [{
+		"title": s.title,
+		"owner": s.owner.id,
+		"is_published": s.is_published,
+	} for s in sets]
+
+	return JsonResponse(ans, safe=False)

@@ -33,5 +33,6 @@ urlpatterns = [
 	path('unit/<int:unit_id>', views.unit, name='units/unit'),
 	path('publish', views.publish),
 	path('unpublish', views.unpublish),
-	path('update', views.update)
+	path('update', views.update),
+	path('my-sets', views.my_sets)
 ]

@@ -141,6 +141,8 @@ class Set(models.Model):
 	title = models.TextField(default="empty set title")
 	description = models.TextField(default="this set have no description")
 	is_deleted = models.BooleanField(default=False)
+	owner = models.ForeignKey(User, on_delete=models.CASCADE)
+	is_published = models.BooleanField(default=False)  # опубликована ли коллекция (видна другим)
 
 
 class SetElement(models.Model):
