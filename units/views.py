@@ -738,6 +738,7 @@ def update(request):
 
 
 # получить список все своих наборов
+@logged
 def my_sets(request):
 	sets = Set.objects.filter(owner=request.user, is_deleted=False)
 	ans = [{

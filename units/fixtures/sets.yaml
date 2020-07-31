@@ -1,0 +1,26 @@
+- model: units.Set
+  pk: 1
+  fields:
+    title: 'первая коллекция'
+    description: 'описание первой коллекции'
+    is_deleted: False
+    owner: 1
+    is_published: True
+
+- model: units.Set
+  pk: 2
+  fields:
+    title: 'амазония'
+    description: 'товары для стилизации свадьбы амазонок'
+    is_deleted: False
+    owner: 1
+    is_published: True
+
+- model: units.Set
+  pk: 3
+  fields:
+    title: 'приват'
+    description: 'мои личные товары'
+    is_deleted: False
+    owner: 1
+    is_published: False
